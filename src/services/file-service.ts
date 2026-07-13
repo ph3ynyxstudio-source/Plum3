@@ -20,6 +20,12 @@ export interface SaveResult {
   version: FileVersion;
 }
 
+export interface RecentDocument {
+  path: string;
+  name: string;
+  modifiedMillis: number;
+}
+
 export class FileServiceError extends Error {
   constructor(
     readonly code: string,
@@ -66,6 +72,14 @@ async function call<T>(command: string, args?: Record<string, unknown>): Promise
 export class FileService {
   chooseDocumentToOpen(): Promise<LoadedDocument | null> {
     return call<LoadedDocument | null>("choose_document_to_open");
+  }
+
+  listRecentDocuments(): Promise<RecentDocument[]> {
+    return call<RecentDocument[]>("list_recent_documents");
+  }
+
+  openRecentDocument(path: string): Promise<LoadedDocument> {
+    return call<LoadedDocument>("open_recent_document", { path });
   }
 
   chooseSavePath(suggestedName: string): Promise<SaveTarget | null> {

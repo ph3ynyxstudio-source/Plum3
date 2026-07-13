@@ -10,6 +10,10 @@ import { RecoveryDraftService } from "./documents/recovery-draft";
 import { WritingPreferencesController } from "./features/writing-preferences/controller";
 import { WritingPreferencesStorage } from "./features/writing-preferences/storage";
 import { DocumentRenameController } from "./documents/document-rename-controller";
+import { DisplayPreferencesController } from "./features/display-preferences/controller";
+import { DisplayPreferencesStorage } from "./features/display-preferences/storage";
+import { FocusModeController } from "./features/display-preferences/focus-mode-controller";
+import { DocumentExportController } from "./features/document-export/controller";
 
 const app = document.querySelector<HTMLElement>("#app");
 
@@ -40,6 +44,9 @@ const writingPreferences = new WritingPreferencesController(
   appDialog,
 );
 writingPreferences.initialize();
+new DisplayPreferencesController(new DisplayPreferencesStorage(), documentStore).initialize();
+new FocusModeController().initialize();
+new DocumentExportController(documentStore, appDialog).initialize();
 
 document.querySelectorAll<HTMLButtonElement>("[data-theme-option]").forEach((button) => {
   button.addEventListener("click", () => applyTheme(button.dataset.themeOption as ThemeName));
@@ -55,14 +62,14 @@ document.querySelector<HTMLButtonElement>(".reveal-left")?.addEventListener("cli
   shell?.classList.toggle("is-left-collapsed");
 });
 
-document.querySelector<HTMLButtonElement>(".collapse-right")?.addEventListener("click", () => {
-  shell?.classList.toggle("is-right-collapsed");
-});
+const rightPanelToggle = document.querySelector<HTMLButtonElement>(".collapse-right");
 
-document.querySelectorAll<HTMLButtonElement>(".setting-toggle").forEach((toggle) => {
-  toggle.addEventListener("click", () => {
-    const nextValue = toggle.getAttribute("aria-checked") !== "true";
-    toggle.setAttribute("aria-checked", String(nextValue));
-    toggle.classList.toggle("is-on", nextValue);
-  });
+rightPanelToggle?.addEventListener("click", () => {
+  if (!shell) return;
+  const isCollapsed = shell.classList.toggle("is-right-collapsed");
+  rightPanelToggle.setAttribute("aria-expanded", String(!isCollapsed));
+  rightPanelToggle.setAttribute(
+    "aria-label",
+    isCollapsed ? "Ouvrir la colonne de personnalisation" : "Fermer la colonne de personnalisation",
+  );
 });

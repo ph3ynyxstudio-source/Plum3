@@ -6,18 +6,16 @@ import {
   WIDTH_OPTIONS,
   type DawnPalette,
   type NightPalette,
-  type ReadingWidth,
   type WritingPreferences,
 } from "./model";
 import { WritingPreferencesStorage } from "./storage";
 
 export class WritingPreferencesController {
-  private readonly backdrop = this.requireElement<HTMLElement>("[data-writing-preferences-dialog]");
-  private readonly fontSizeInput = this.requireElement<HTMLInputElement>("[data-writing-font-size]");
-  private readonly lineHeightInput = this.requireElement<HTMLInputElement>("[data-writing-line-height]");
-  private readonly fontSizeOutput = this.requireElement<HTMLOutputElement>("[data-font-size-output]");
-  private readonly lineHeightOutput = this.requireElement<HTMLOutputElement>("[data-line-height-output]");
-  private readonly selectedFontName = this.requireElement<HTMLElement>("[data-selected-font-name]");
+  private readonly panelFontSelect = this.requireElement<HTMLSelectElement>("[data-panel-writing-font]");
+  private readonly panelFontStatus = this.requireElement<HTMLElement>("[data-panel-font-status]");
+  private readonly panelFontSizeInput = this.requireElement<HTMLInputElement>("[data-panel-writing-font-size]");
+  private readonly panelLineHeightInput = this.requireElement<HTMLInputElement>("[data-panel-writing-line-height]");
+  private readonly panelWidthInput = this.requireElement<HTMLInputElement>("[data-panel-writing-width-range]");
   private readonly availableFonts = new Map<string, boolean>();
   private preferences = structuredClone(DEFAULT_WRITING_PREFERENCES);
 
@@ -34,96 +32,63 @@ export class WritingPreferencesController {
   }
 
   private bindActions(): void {
-    document.querySelectorAll<HTMLButtonElement>("[data-writing-preferences-open]").forEach((button) => {
-      button.addEventListener("click", () => this.open());
-    });
-    document.querySelectorAll<HTMLButtonElement>("[data-writing-preferences-close]").forEach((button) => {
-      button.addEventListener("click", () => this.close());
-    });
-    this.backdrop.addEventListener("click", (event) => {
-      if (event.target === this.backdrop) this.close();
-    });
-    document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape" && !this.backdrop.hidden) this.close();
-    });
     document.addEventListener("plum3:theme-change", () => this.applyAndRender(false));
 
-    const quickToggle = document.querySelector<HTMLButtonElement>("[data-quick-writing-toggle]");
-    const quickMenu = document.querySelector<HTMLElement>("[data-quick-writing-menu]");
-    quickToggle?.addEventListener("click", (event) => {
-      event.stopPropagation();
-      if (!quickMenu) return;
-      quickMenu.hidden = !quickMenu.hidden;
-      quickToggle.setAttribute("aria-expanded", String(!quickMenu.hidden));
-    });
-    document.addEventListener("click", (event) => {
-      if (!quickMenu || quickMenu.hidden || (event.target as Element).closest(".quick-writing-preferences")) return;
-      quickMenu.hidden = true;
-      quickToggle?.setAttribute("aria-expanded", "false");
-    });
-    document.querySelector<HTMLSelectElement>("[data-quick-writing-font]")?.addEventListener("change", (event) => {
-      this.preferences.fontId = (event.currentTarget as HTMLSelectElement).value;
+    this.panelFontSelect.addEventListener("change", () => {
+      this.preferences.fontId = this.panelFontSelect.value;
       this.applyAndRender();
     });
-    document.querySelector<HTMLButtonElement>("[data-quick-font-decrease]")?.addEventListener("click", () => {
+
+    this.panelFontSizeInput.addEventListener("input", () => {
+      this.preferences.fontSize = Number(this.panelFontSizeInput.value);
+      this.applyAndRender();
+    });
+    this.panelLineHeightInput.addEventListener("input", () => {
+      this.preferences.lineHeight = Number(this.panelLineHeightInput.value);
+      this.applyAndRender();
+    });
+    this.panelWidthInput.addEventListener("input", () => {
+      this.preferences.readingWidth = WIDTH_OPTIONS[Number(this.panelWidthInput.value)]?.id ?? "medium";
+      this.applyAndRender();
+    });
+    document.querySelector<HTMLButtonElement>("[data-panel-font-decrease]")?.addEventListener("click", () => {
       this.preferences.fontSize = Math.max(14, this.preferences.fontSize - 1);
       this.applyAndRender();
     });
-    document.querySelector<HTMLButtonElement>("[data-quick-font-increase]")?.addEventListener("click", () => {
+    document.querySelector<HTMLButtonElement>("[data-panel-font-increase]")?.addEventListener("click", () => {
       this.preferences.fontSize = Math.min(28, this.preferences.fontSize + 1);
       this.applyAndRender();
     });
-    document.querySelector<HTMLSelectElement>("[data-quick-line-height]")?.addEventListener("change", (event) => {
-      this.preferences.lineHeight = Number((event.currentTarget as HTMLSelectElement).value);
+    document.querySelector<HTMLButtonElement>("[data-panel-line-height-decrease]")?.addEventListener("click", () => {
+      this.preferences.lineHeight = Math.max(1.4, Math.round((this.preferences.lineHeight - 0.1) * 10) / 10);
       this.applyAndRender();
     });
-    document.querySelectorAll<HTMLButtonElement>("[data-quick-writing-width]").forEach((button) => button.addEventListener("click", () => {
-      this.preferences.readingWidth = button.dataset.quickWritingWidth as ReadingWidth;
+    document.querySelector<HTMLButtonElement>("[data-panel-line-height-increase]")?.addEventListener("click", () => {
+      this.preferences.lineHeight = Math.min(2, Math.round((this.preferences.lineHeight + 0.1) * 10) / 10);
       this.applyAndRender();
-    }));
+    });
+    document.querySelector<HTMLButtonElement>("[data-panel-width-decrease]")?.addEventListener("click", () => {
+      const index = Math.max(0, WIDTH_OPTIONS.findIndex((option) => option.id === this.preferences.readingWidth) - 1);
+      this.preferences.readingWidth = WIDTH_OPTIONS[index].id;
+      this.applyAndRender();
+    });
+    document.querySelector<HTMLButtonElement>("[data-panel-width-increase]")?.addEventListener("click", () => {
+      const currentIndex = WIDTH_OPTIONS.findIndex((option) => option.id === this.preferences.readingWidth);
+      this.preferences.readingWidth = WIDTH_OPTIONS[Math.min(WIDTH_OPTIONS.length - 1, currentIndex + 1)].id;
+      this.applyAndRender();
+    });
 
-    document.querySelectorAll<HTMLButtonElement>("[data-writing-font]").forEach((button) => {
+    document.querySelectorAll<HTMLButtonElement>("[data-panel-writing-palette]").forEach((button) => {
       button.addEventListener("click", () => {
-        if (FONT_LIBRARY.some((font) => font.id === button.dataset.writingFont)) {
-          this.preferences.fontId = button.dataset.writingFont!;
-          this.applyAndRender();
-        }
-      });
-    });
-    this.fontSizeInput.addEventListener("input", () => {
-      this.preferences.fontSize = Number(this.fontSizeInput.value);
-      this.applyAndRender();
-    });
-    this.lineHeightInput.addEventListener("input", () => {
-      this.preferences.lineHeight = Number(this.lineHeightInput.value);
-      this.applyAndRender();
-    });
-    document.querySelectorAll<HTMLButtonElement>("[data-writing-width]").forEach((button) => {
-      button.addEventListener("click", () => {
-        this.preferences.readingWidth = button.dataset.writingWidth as ReadingWidth;
+        const theme = button.dataset.panelPaletteTheme as ThemeName;
+        if (theme === "nuit") this.preferences.palettes.nuit = button.dataset.panelWritingPalette as NightPalette;
+        if (theme === "aube") this.preferences.palettes.aube = button.dataset.panelWritingPalette as DawnPalette;
         this.applyAndRender();
       });
     });
-    document.querySelectorAll<HTMLButtonElement>("[data-writing-palette]").forEach((button) => {
-      button.addEventListener("click", () => {
-        const theme = button.dataset.paletteTheme as ThemeName;
-        if (theme === "nuit") this.preferences.palettes.nuit = button.dataset.writingPalette as NightPalette;
-        if (theme === "aube") this.preferences.palettes.aube = button.dataset.writingPalette as DawnPalette;
-        this.applyAndRender();
-      });
-    });
-    this.requireElement<HTMLButtonElement>("[data-writing-preferences-reset]").addEventListener("click", () => {
+    this.requireElement<HTMLButtonElement>("[data-panel-writing-reset]").addEventListener("click", () => {
       void this.reset();
     });
-  }
-
-  private open(): void {
-    this.backdrop.hidden = false;
-    queueMicrotask(() => this.backdrop.querySelector<HTMLButtonElement>("[data-writing-font].is-selected")?.focus());
-  }
-
-  private close(): void {
-    this.backdrop.hidden = true;
   }
 
   private async reset(): Promise<void> {
@@ -155,58 +120,34 @@ export class WritingPreferencesController {
     root.setProperty("--writing-text-color", `var(--color-reading-${palette})`);
 
     if (persist) this.storage.save(this.preferences);
-    this.fontSizeInput.value = String(this.preferences.fontSize);
-    this.lineHeightInput.value = String(this.preferences.lineHeight);
-    this.fontSizeOutput.value = `${this.preferences.fontSize} px`;
-    this.lineHeightOutput.value = this.preferences.lineHeight.toLocaleString("fr-CA", { minimumFractionDigits: 1 });
-    this.selectedFontName.textContent = isAvailable ? font.name : `${font.name} · repli ${font.fallbackName}`;
-    const quickFont = document.querySelector<HTMLSelectElement>("[data-quick-writing-font]");
-    if (quickFont) quickFont.value = font.id;
-    const quickStatus = document.querySelector<HTMLElement>("[data-quick-font-status]");
-    if (quickStatus) quickStatus.textContent = isAvailable ? "Disponible" : `Repli : ${font.fallbackName}`;
-    const quickSize = document.querySelector<HTMLOutputElement>("[data-quick-font-size]");
-    if (quickSize) quickSize.value = `${this.preferences.fontSize} px`;
-    const quickLineHeight = document.querySelector<HTMLSelectElement>("[data-quick-line-height]");
-    if (quickLineHeight) quickLineHeight.value = String(this.preferences.lineHeight);
-    document.querySelector<HTMLButtonElement>("[data-quick-font-decrease]")!.disabled = this.preferences.fontSize <= 14;
-    document.querySelector<HTMLButtonElement>("[data-quick-font-increase]")!.disabled = this.preferences.fontSize >= 28;
-    document.querySelectorAll<HTMLButtonElement>("[data-quick-writing-width]").forEach((button) => {
-      const selected = button.dataset.quickWritingWidth === width.id;
-      button.classList.toggle("is-selected", selected);
-      button.setAttribute("aria-pressed", String(selected));
-    });
 
-    document.querySelectorAll<HTMLButtonElement>("[data-writing-font]").forEach((button) => {
-      const selected = button.dataset.writingFont === font.id;
-      button.classList.toggle("is-selected", selected);
-      button.setAttribute("aria-pressed", String(selected));
-      const candidate = FONT_LIBRARY.find((item) => item.id === button.dataset.writingFont);
-      if (!candidate) return;
-      const candidateAvailable = this.availableFonts.get(candidate.id) ?? false;
-      button.style.fontFamily = candidateAvailable ? candidate.family : candidate.fallbackFamily;
-      button.classList.toggle("uses-fallback", !candidateAvailable);
-      const availability = button.querySelector<HTMLElement>("[data-font-availability]");
-      if (availability) availability.textContent = candidateAvailable ? "Disponible" : `Repli : ${candidate.fallbackName}`;
-      button.setAttribute("aria-label", candidateAvailable ? `${candidate.name}, disponible` : `${candidate.name}, indisponible, repli ${candidate.fallbackName}`);
-    });
-    document.querySelectorAll<HTMLButtonElement>("[data-writing-width]").forEach((button) => {
-      const selected = button.dataset.writingWidth === width.id;
-      button.classList.toggle("is-selected", selected);
-      button.setAttribute("aria-pressed", String(selected));
-    });
-    document.querySelectorAll<HTMLElement>("[data-palette-group]").forEach((group) => {
-      group.hidden = group.dataset.paletteGroup !== theme;
-    });
-    document.querySelectorAll<HTMLButtonElement>("[data-writing-palette]").forEach((button) => {
-      const selected = button.dataset.paletteTheme === theme && button.dataset.writingPalette === palette;
-      button.classList.toggle("is-selected", selected);
-      button.setAttribute("aria-pressed", String(selected));
-    });
+    const widthIndex = Math.max(0, WIDTH_OPTIONS.findIndex((option) => option.id === width.id));
+    this.panelFontSelect.value = font.id;
+    this.panelFontSelect.style.fontFamily = appliedFamily;
+    this.panelFontStatus.textContent = isAvailable ? "Police disponible" : `Police de repli : ${font.fallbackName}`;
+    this.panelFontSizeInput.value = String(this.preferences.fontSize);
+    this.panelFontSizeInput.style.setProperty("--range-progress", `${((this.preferences.fontSize - 14) / 14) * 100}%`);
+    this.panelLineHeightInput.value = String(this.preferences.lineHeight);
+    this.panelLineHeightInput.style.setProperty("--range-progress", `${((this.preferences.lineHeight - 1.4) / 0.6) * 100}%`);
+    this.panelWidthInput.value = String(widthIndex);
+    this.panelWidthInput.style.setProperty("--range-progress", `${(widthIndex / (WIDTH_OPTIONS.length - 1)) * 100}%`);
+    this.requireElement<HTMLOutputElement>("[data-panel-font-size]").value = `${this.preferences.fontSize} px`;
+    this.requireElement<HTMLOutputElement>("[data-panel-line-height]").value = this.preferences.lineHeight.toLocaleString("fr-CA", { minimumFractionDigits: 1 });
+    this.requireElement<HTMLOutputElement>("[data-panel-writing-width]").value = width.value.replace("px", " px");
+    this.requireElement<HTMLButtonElement>("[data-panel-font-decrease]").disabled = this.preferences.fontSize <= 14;
+    this.requireElement<HTMLButtonElement>("[data-panel-font-increase]").disabled = this.preferences.fontSize >= 28;
+    this.requireElement<HTMLButtonElement>("[data-panel-line-height-decrease]").disabled = this.preferences.lineHeight <= 1.4;
+    this.requireElement<HTMLButtonElement>("[data-panel-line-height-increase]").disabled = this.preferences.lineHeight >= 2;
+    this.requireElement<HTMLButtonElement>("[data-panel-width-decrease]").disabled = widthIndex === 0;
+    this.requireElement<HTMLButtonElement>("[data-panel-width-increase]").disabled = widthIndex === WIDTH_OPTIONS.length - 1;
 
-    const fontSummary = isAvailable ? font.name : `${font.name} (repli ${font.fallbackName})`;
-    const summary = `${fontSummary} · ${this.preferences.fontSize} px · interligne ${this.preferences.lineHeight.toLocaleString("fr-CA")}`;
-    document.querySelectorAll<HTMLElement>("[data-writing-preferences-summary]").forEach((element) => {
-      element.textContent = summary;
+    document.querySelectorAll<HTMLElement>("[data-panel-palette-group]").forEach((group) => {
+      group.hidden = group.dataset.panelPaletteGroup !== theme;
+    });
+    document.querySelectorAll<HTMLButtonElement>("[data-panel-writing-palette]").forEach((button) => {
+      const selected = button.dataset.panelPaletteTheme === theme && button.dataset.panelWritingPalette === palette;
+      button.classList.toggle("is-selected", selected);
+      button.setAttribute("aria-pressed", String(selected));
     });
   }
 

@@ -3,6 +3,10 @@ const INVALID_CHARACTERS = /[<>:"/\\|?*\u0000-\u001f]/u;
 
 export class DocumentNameError extends Error {}
 
+export function displayDocumentName(name: string): string {
+  return name.replace(/\.md$/iu, "");
+}
+
 export function validatedDocumentName(input: string, currentName: string): string {
   const value = input.trim();
   if (!value) throw new DocumentNameError("Le nom du document ne peut pas être vide.");

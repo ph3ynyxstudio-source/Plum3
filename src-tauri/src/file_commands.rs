@@ -1,3 +1,4 @@
+use crate::recent_documents::{RecentDocument, RecentDocuments};
 use rfd::FileDialog;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -215,6 +216,7 @@ fn read_document(path: &Path) -> Result<LoadedDocument, FileCommandError> {
 #[tauri::command]
 pub fn choose_document_to_open(
     authorized_paths: tauri::State<'_, AuthorizedPaths>,
+    recent_documents: tauri::State<'_, RecentDocuments>,
 ) -> Result<Option<LoadedDocument>, FileCommandError> {
     let Some(selected) = FileDialog::new()
         .set_title("Ouvrir un document")
@@ -227,7 +229,36 @@ pub fn choose_document_to_open(
     let path = normalize_path(&selected)?;
     validate_extension(&path)?;
     authorized_paths.authorize(path.clone())?;
-    read_document(&path).map(Some)
+    let document = read_document(&path)?;
+    recent_documents.record(&path);
+    Ok(Some(document))
+}
+
+#[tauri::command]
+pub fn list_recent_documents(
+    recent_documents: tauri::State<'_, RecentDocuments>,
+) -> Vec<RecentDocument> {
+    recent_documents.list()
+}
+
+#[tauri::command]
+pub fn open_recent_document(
+    path: String,
+    authorized_paths: tauri::State<'_, AuthorizedPaths>,
+    recent_documents: tauri::State<'_, RecentDocuments>,
+) -> Result<LoadedDocument, FileCommandError> {
+    let path = normalize_path(Path::new(&path))?;
+    validate_extension(&path)?;
+    if !recent_documents.contains(&path) {
+        return Err(error(
+            "not_authorized",
+            "Ce document ne fait pas partie de l’historique récent de Plum3 de Nyx.",
+        ));
+    }
+    authorized_paths.authorize(path.clone())?;
+    let document = read_document(&path)?;
+    recent_documents.record(&path);
+    Ok(document)
 }
 
 #[tauri::command]
@@ -260,8 +291,11 @@ pub fn choose_document_save_path(
 pub fn save_document(
     request: SaveDocumentRequest,
     authorized_paths: tauri::State<'_, AuthorizedPaths>,
+    recent_documents: tauri::State<'_, RecentDocuments>,
 ) -> Result<SaveDocumentResult, FileCommandError> {
-    save_document_inner(request, &authorized_paths)
+    let result = save_document_inner(request, &authorized_paths)?;
+    recent_documents.record(Path::new(&result.path));
+    Ok(result)
 }
 
 #[tauri::command]
@@ -269,8 +303,11 @@ pub fn rename_document(
     path: String,
     new_name: String,
     authorized_paths: tauri::State<'_, AuthorizedPaths>,
+    recent_documents: tauri::State<'_, RecentDocuments>,
 ) -> Result<SaveDocumentResult, FileCommandError> {
-    rename_document_inner(&path, &new_name, &authorized_paths)
+    let result = rename_document_inner(&path, &new_name, &authorized_paths)?;
+    recent_documents.record(Path::new(&result.path));
+    Ok(result)
 }
 
 fn rename_document_inner(path: &str, new_name: &str, authorized_paths: &AuthorizedPaths) -> Result<SaveDocumentResult, FileCommandError> {

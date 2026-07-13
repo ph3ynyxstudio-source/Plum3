@@ -1,10 +1,12 @@
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { FileService, FileServiceError, type SaveTarget } from "../services/file-service";
+import { FileService, FileServiceError, type RecentDocument, type SaveTarget } from "../services/file-service";
 import { AppDialog } from "../ui/app-dialog";
 import { TemplateDialog } from "../templates/template-dialog";
 import { buildTemplateContent, templateDocumentName } from "../templates/writing-templates";
 import { DocumentStore, type FileVersion } from "./document-state";
 import { recoveredDocumentName, RecoveryDraftService } from "./recovery-draft";
+import { displayDocumentName } from "./document-name";
+import { icon } from "../ui/icons";
 
 export class DocumentController {
   private readonly editor = this.requireElement<HTMLTextAreaElement>("[data-document-editor]");
@@ -13,16 +15,18 @@ export class DocumentController {
   private readonly saveDots = Array.from(
     document.querySelectorAll<HTMLElement>("[data-document-save-dot]"),
   );
-  private readonly lastSave = this.requireElement<HTMLElement>("[data-last-save-time]");
+  private readonly lastSave = this.requireElement<HTMLTimeElement>("[data-last-save-time]");
   private readonly wordCount = this.requireElement<HTMLElement>("[data-word-count]");
   private readonly characterCount = this.requireElement<HTMLElement>("[data-character-count]");
   private readonly lineCount = this.requireElement<HTMLElement>("[data-line-count]");
   private readonly documentFormat = this.requireElement<HTMLElement>("[data-document-format]");
+  private readonly recentDocuments = this.requireElement<HTMLElement>("[data-recent-documents]");
   private readonly actionButtons = Array.from(
     document.querySelectorAll<HTMLButtonElement>("[data-document-action]"),
   );
   private busy = false;
   private closing = false;
+  private recentActivePath: string | null | undefined;
 
   constructor(
     private readonly store: DocumentStore,
@@ -41,7 +45,13 @@ export class DocumentController {
         recoveryDraft.content,
       );
     }
-    this.store.subscribe(() => this.render());
+    this.store.subscribe((state) => {
+      this.render();
+      if (state.path !== this.recentActivePath) {
+        this.recentActivePath = state.path;
+        void this.refreshRecentDocuments();
+      }
+    });
 
     await getCurrentWindow().onCloseRequested(async (event) => {
       if (this.closing || !this.store.isDirty) return;
@@ -81,6 +91,13 @@ export class DocumentController {
     });
     document.querySelector<HTMLButtonElement>(".open-document")?.addEventListener("click", () => {
       void this.openDocument();
+    });
+    this.recentDocuments.addEventListener("click", (event) => {
+      const target = event.target as Element | null;
+      const button = target?.closest<HTMLButtonElement>("[data-recent-document-path]");
+      if (button?.dataset.recentDocumentPath) {
+        void this.openRecentDocument(button.dataset.recentDocumentPath);
+      }
     });
     document.querySelector<HTMLButtonElement>(".save-document")?.addEventListener("click", () => {
       void this.saveCurrentDocument();
@@ -129,6 +146,22 @@ export class DocumentController {
         }
       } catch (cause) {
         await this.showFileError("Impossible d’ouvrir le document", cause);
+      }
+    });
+  }
+
+  private async openRecentDocument(path: string): Promise<void> {
+    if (this.busy) return;
+    if (!(await this.resolveUnsavedChanges("ouvrir un autre document"))) return;
+    await this.runBusy(async () => {
+      try {
+        const document = await this.files.openRecentDocument(path);
+        this.recoveryDrafts.clear();
+        this.store.load(document);
+        this.editor.focus();
+      } catch (cause) {
+        await this.refreshRecentDocuments();
+        await this.showFileError("Impossible d’ouvrir le document récent", cause);
       }
     });
   }
@@ -263,7 +296,7 @@ export class DocumentController {
     const dirty = this.store.isDirty;
 
     if (this.editor.value !== state.content) this.editor.value = state.content;
-    this.title.textContent = state.name;
+    this.title.textContent = displayDocumentName(state.name);
     this.title.title = state.path ?? "Document non enregistré";
     const isUnsaved = !state.path;
     this.documentStatus.textContent = dirty
@@ -275,9 +308,29 @@ export class DocumentController {
       dot.classList.toggle("is-dirty", dirty);
       dot.classList.toggle("is-unsaved", isUnsaved && !dirty);
     });
-    this.lastSave.textContent = state.lastSavedAt
-      ? `: ${state.lastSavedAt.toLocaleTimeString("fr-CA", { hour12: false })}`
-      : "—";
+    if (state.lastSavedAt) {
+      const savedDate = state.lastSavedAt.toLocaleDateString("fr-CA", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+      const savedTime = state.lastSavedAt.toLocaleTimeString("fr-CA", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      });
+      this.lastSave.textContent = `${savedDate} à ${savedTime}`;
+      this.lastSave.dateTime = state.lastSavedAt.toISOString();
+      this.lastSave.title = state.lastSavedAt.toLocaleString("fr-CA", {
+        dateStyle: "full",
+        timeStyle: "medium",
+        hour12: false,
+      });
+    } else {
+      this.lastSave.textContent = "—";
+      this.lastSave.removeAttribute("datetime");
+      this.lastSave.removeAttribute("title");
+    }
 
     const trimmed = state.content.trim();
     const words = trimmed ? trimmed.split(/\s+/u).length : 0;
@@ -294,6 +347,64 @@ export class DocumentController {
         : { full: "Document", short: "DOC" };
     this.documentFormat.textContent = format.full;
     this.documentFormat.dataset.shortLabel = format.short;
+  }
+
+  private async refreshRecentDocuments(): Promise<void> {
+    try {
+      this.renderRecentDocuments(await this.files.listRecentDocuments());
+    } catch {
+      this.renderRecentDocuments([]);
+    }
+  }
+
+  private renderRecentDocuments(documents: RecentDocument[]): void {
+    if (documents.length === 0) {
+      const empty = document.createElement("p");
+      empty.className = "sidebar-empty";
+      empty.textContent = "Aucun document récent.";
+      this.recentDocuments.replaceChildren(empty);
+      return;
+    }
+
+    const cards = documents.map((recent) => {
+      const button = document.createElement("button");
+      button.className = "document-card";
+      button.classList.toggle("is-active", recent.path === this.store.current.path);
+      button.type = "button";
+      button.dataset.recentDocumentPath = recent.path;
+      button.title = recent.path;
+
+      const documentIcon = document.createElement("span");
+      documentIcon.className = "document-icon";
+      documentIcon.innerHTML = icon("document");
+
+      const copy = document.createElement("span");
+      copy.className = "document-copy";
+      const title = document.createElement("strong");
+      title.textContent = displayDocumentName(recent.name);
+      const details = document.createElement("span");
+      const time = document.createElement("time");
+      time.dateTime = new Date(recent.modifiedMillis).toISOString();
+      time.textContent = this.formatRecentDate(recent.modifiedMillis);
+      const format = document.createElement("em");
+      format.textContent = recent.name.toLowerCase().endsWith(".txt") ? "TXT" : "MD";
+      details.append(time, format);
+      copy.append(title, details);
+
+      button.append(documentIcon, copy);
+      button.insertAdjacentHTML("beforeend", icon("chevronRight"));
+      return button;
+    });
+    this.recentDocuments.replaceChildren(...cards);
+  }
+
+  private formatRecentDate(modifiedMillis: number): string {
+    const modified = new Date(modifiedMillis);
+    const today = new Date();
+    if (modified.toDateString() === today.toDateString()) {
+      return modified.toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" });
+    }
+    return modified.toLocaleDateString("fr-CA", { day: "2-digit", month: "short" });
   }
 
   private async showFileError(title: string, cause: unknown): Promise<void> {
@@ -313,6 +424,9 @@ export class DocumentController {
   private setBusy(busy: boolean): void {
     this.busy = busy;
     this.actionButtons.forEach((button) => {
+      button.disabled = busy;
+    });
+    this.recentDocuments.querySelectorAll<HTMLButtonElement>("button").forEach((button) => {
       button.disabled = busy;
     });
   }

@@ -6,17 +6,20 @@ Les réglages d’écriture adaptent uniquement l’affichage de l’éditeur. I
 modifient jamais le contenu Markdown, le chemin du document ou son état de
 sauvegarde.
 
-Ils sont accessibles depuis **Paramètres → Écriture** et depuis le résumé des
-réglages dans le panneau droit.
+Ils sont accessibles uniquement depuis la colonne de personnalisation située à
+droite du document. Le bouton de menu en haut à droite ouvre ou ferme cette
+colonne, y compris lorsque la fenêtre est étroite.
 
 ## Réglages disponibles
 
-- typographie parmi une bibliothèque intégrée de 15 choix ;
+- typographie parmi une bibliothèque intégrée de 15 choix, présentée dans un
+  menu déroulant catégorisé ;
 - taille du texte de 14 à 28 px, avec 18 px par défaut ;
 - interligne de 1,4 à 2,0, avec 1,7 par défaut ;
 - largeur de lecture étroite, moyenne, large ou très large ;
-- palettes officielles adaptées séparément aux thèmes Aube et Nuit ;
-- aperçu immédiat avec titre, sous-titre, paragraphe, liste et citation ;
+- palettes officielles adaptées séparément aux thèmes Aube et Nuit, présentées
+  sous forme de pastilles de couleur ;
+- aperçu immédiat directement dans le document ouvert ;
 - réinitialisation complète après confirmation.
 
 ## Bibliothèque typographique
@@ -47,6 +50,34 @@ Une valeur absente ou invalide est remplacée par sa valeur par défaut.
 
 Les palettes Aube et Nuit sont mémorisées séparément afin qu’un changement de
 thème ne remplace pas le choix effectué dans l’autre thème.
+
+## Inspecteur unique
+
+La colonne de droite est l’unique inspecteur visuel du document. Il n’existe
+plus de fenêtre dédiée ni de menu rapide « Aa ». Les réglages sont appliqués dès
+leur modification afin de poursuivre l’écriture sans changer de contexte.
+
+## Réglages d’affichage
+
+La carte **Affichage** mémorise séparément la visibilité du compteur de mots,
+du compteur de caractères et du nombre de lignes. Ces options ne changent pas
+le contenu du document : elles contrôlent uniquement les informations visibles
+dans la barre d’état.
+
+L’option **Aperçu Markdown** remplace temporairement la zone d’édition par une
+vue de lecture. Elle interprète les titres, paragraphes, listes, citations,
+séparateurs, blocs de code et quelques styles en ligne courants. Désactiver
+l’aperçu restaure immédiatement l’éditeur et son contenu d’origine.
+
+## Mode concentration
+
+Le mode concentration masque temporairement la bibliothèque, la colonne de
+personnalisation et la barre supérieure afin de laisser le document occuper la
+fenêtre. Un bouton de sortie reste visible en haut à droite et la touche Échap
+restaure également l’interface normale.
+
+Le titre central masque visuellement le suffixe `.md`, mais le nom réel du
+fichier, son extension et son format de sauvegarde restent inchangés.
 
 ## Valeurs par défaut
 

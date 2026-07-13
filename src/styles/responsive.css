@@ -17,7 +17,6 @@
     gap: 12px;
   }
 
-  .status-secondary,
   .status-feather,
   .status-save-time { display: none; }
 }
@@ -29,7 +28,7 @@
 @media (max-width: 950px) {
   :root {
     --left-panel-width: 218px;
-    --right-panel-width: 218px;
+    --right-panel-width: 250px;
   }
 
   .brand-feather { display: none; }
@@ -64,9 +63,6 @@
 }
 
 @media (max-width: 900px) {
-  :root { --right-panel-width: 0px; }
-
-  .right-panel { display: none; }
   .document-title small { display: none; }
 }
 
@@ -76,10 +72,17 @@
   .save-document-as { display: none; }
   .topbar-actions { gap: 7px; }
   .document-title { gap: 6px; }
+  .statusbar { grid-template-columns: minmax(0, 1fr); }
+  .status-center,
+  .status-right { display: none; }
+  .status-left { overflow-x: auto; white-space: nowrap; }
 }
 
 @media (max-width: 700px) {
-  :root { --left-panel-width: 170px; }
+  :root {
+    --left-panel-width: 170px;
+    --right-panel-width: 240px;
+  }
 
   .topbar {
     gap: 6px;

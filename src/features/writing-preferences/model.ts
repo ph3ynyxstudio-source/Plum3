@@ -31,6 +31,14 @@ export interface PaletteOption {
   name: string;
 }
 
+export const FONT_CATEGORIES: FontCategory[] = [
+  "Narration",
+  "Manuscrit",
+  "Documentation",
+  "Développement",
+  "Composition",
+];
+
 export const FONT_LIBRARY: FontOption[] = [
   { id: "literata", name: "Literata", category: "Narration", family: 'Literata, Georgia, serif', fallbackName: "Georgia", fallbackFamily: "Georgia, serif", genericFamily: "serif" },
   { id: "lora", name: "Lora", category: "Narration", family: 'Lora, Cambria, serif', fallbackName: "Cambria", fallbackFamily: "Cambria, serif", genericFamily: "serif" },

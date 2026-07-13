@@ -1,7 +1,7 @@
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { FileService } from "../services/file-service";
 import { AppDialog } from "../ui/app-dialog";
-import { DocumentNameError, validatedDocumentName } from "./document-name";
+import { displayDocumentName, DocumentNameError, validatedDocumentName } from "./document-name";
 import { DocumentStore } from "./document-state";
 
 export class DocumentRenameController {
@@ -19,7 +19,7 @@ export class DocumentRenameController {
     });
     this.input.addEventListener("blur", () => { if (this.editing) void this.commit(); });
     this.store.subscribe((state) => {
-      this.display.textContent = state.name;
+      this.display.textContent = displayDocumentName(state.name);
       this.display.title = state.path ?? "Document non enregistré — cliquer pour renommer";
       void getCurrentWindow().setTitle(`${state.name} — Plum3 de Nyx`).catch(() => undefined);
     });

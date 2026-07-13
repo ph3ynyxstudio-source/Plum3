@@ -65,7 +65,7 @@ export class DocumentStore {
     this.state = {
       ...document,
       savedContent: document.content,
-      lastSavedAt: null,
+      lastSavedAt: new Date(document.version.modifiedMillis),
     };
     this.emit();
   }
@@ -83,7 +83,11 @@ export class DocumentStore {
   }
 
   markRenamed(result: { name: string; path: string; version: FileVersion }): void {
-    this.state = { ...this.state, ...result, lastSavedAt: new Date() };
+    this.state = {
+      ...this.state,
+      ...result,
+      lastSavedAt: new Date(result.version.modifiedMillis),
+    };
     this.emit();
   }
 
@@ -92,7 +96,7 @@ export class DocumentStore {
       ...this.state,
       ...result,
       savedContent: this.state.content,
-      lastSavedAt: new Date(),
+      lastSavedAt: new Date(result.version.modifiedMillis),
     };
     this.emit();
   }

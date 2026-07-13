@@ -1,27 +1,11 @@
-import { recentDocuments } from "../data/shell-content";
 import { renderGenreOptions } from "../templates/template-dialog";
 import { WRITING_TEMPLATES } from "../templates/writing-templates";
 import { icon } from "../ui/icons";
-import { renderQuickWritingPreferences, renderWritingPreferencesDialog } from "../features/writing-preferences/ui";
+import { FONT_CATEGORIES, FONT_LIBRARY, PALETTES } from "../features/writing-preferences/model";
+import type { ThemeName } from "../theme/theme";
 
 function renderRecentDocuments(): string {
-  if (recentDocuments.length === 0) {
-    return '<p class="sidebar-empty">Aucun document récent.</p>';
-  }
-
-  return recentDocuments
-    .map(
-      (document) => `
-        <button class="document-card${document.active ? " is-active" : ""}" type="button">
-          <span class="document-icon">${icon("document")}</span>
-          <span class="document-copy">
-            <strong>${document.title}</strong>
-            <span><time>${document.time}</time><em>${document.style}</em></span>
-          </span>
-          ${icon("chevronRight")}
-        </button>`,
-    )
-    .join("");
+  return '<p class="sidebar-empty">Aucun document récent.</p>';
 }
 
 function renderWritingTemplates(): string {
@@ -37,11 +21,31 @@ function renderWritingTemplates(): string {
     .join("");
 }
 
+function renderPanelFontOptions(): string {
+  return FONT_CATEGORIES.map((category) => `
+    <optgroup label="${category}">
+      ${FONT_LIBRARY.filter((font) => font.category === category)
+        .map((font) => `<option value="${font.id}">${font.name}</option>`)
+        .join("")}
+    </optgroup>`).join("");
+}
+
+function renderPanelPaletteOptions(theme: ThemeName): string {
+  return PALETTES[theme].map((palette) => `
+    <button
+      class="panel-color-swatch"
+      data-panel-writing-palette="${palette.id}"
+      data-panel-palette-theme="${theme}"
+      type="button"
+      aria-label="${palette.name}"
+      title="${palette.name}"
+    ><i data-palette-swatch="${palette.id}" aria-hidden="true"></i></button>`).join("");
+}
+
 function renderToolbar(): string {
   return `
     <div class="editor-toolbar" aria-label="Outils d’écriture">
       <span class="toolbar-empty">Mise en forme Markdown disponible dans une prochaine phase.</span>
-      ${renderQuickWritingPreferences()}
     </div>`;
 }
 
@@ -57,6 +61,7 @@ function renderEditor(): string {
           placeholder="Commence à écrire…"
           spellcheck="true"
         ></textarea>
+        <article class="markdown-preview" data-markdown-preview aria-label="Aperçu Markdown" hidden></article>
       </div>
     </main>`;
 }
@@ -64,22 +69,80 @@ function renderEditor(): string {
 function renderRightPanel(): string {
   return `
     <aside class="right-panel" aria-label="Réglages d’écriture">
-      <section class="settings-card">
+      <section class="settings-card writing-settings-card">
         <h2>Réglages d’écriture</h2>
-        <p class="settings-empty" data-writing-preferences-summary>Literata · 18 px · interligne 1,7</p>
-        <button class="secondary-action writing-preferences-open" data-writing-preferences-open type="button">Personnaliser l’écriture</button>
+        <label class="panel-select-setting">
+          <span>Typographie</span>
+          <select data-panel-writing-font>${renderPanelFontOptions()}</select>
+          <small data-panel-font-status aria-live="polite"></small>
+        </label>
+        <div class="range-setting">
+          <span>
+            <span>Taille de police</span>
+            <b class="range-value">
+              <button data-panel-font-decrease type="button" aria-label="Diminuer la taille du texte">−</button>
+              <output data-panel-font-size>18 px</output>
+              <button data-panel-font-increase type="button" aria-label="Augmenter la taille du texte">+</button>
+            </b>
+          </span>
+          <input data-panel-writing-font-size aria-label="Taille de police" type="range" min="14" max="28" step="1" value="18" />
+        </div>
+        <div class="range-setting">
+          <span>
+            <span>Interlignage</span>
+            <b class="range-value">
+              <button data-panel-line-height-decrease type="button" aria-label="Réduire l’interligne">−</button>
+              <output data-panel-line-height>1,7</output>
+              <button data-panel-line-height-increase type="button" aria-label="Augmenter l’interligne">+</button>
+            </b>
+          </span>
+          <input data-panel-writing-line-height aria-label="Interlignage" type="range" min="1.4" max="2" step="0.1" value="1.7" />
+        </div>
+        <div class="range-setting">
+          <span>
+            <span>Largeur de lecture</span>
+            <b class="range-value">
+              <button data-panel-width-decrease type="button" aria-label="Réduire la largeur de lecture">−</button>
+              <output data-panel-writing-width>680 px</output>
+              <button data-panel-width-increase type="button" aria-label="Augmenter la largeur de lecture">+</button>
+            </b>
+          </span>
+          <input data-panel-writing-width-range aria-label="Largeur de lecture" type="range" min="0" max="3" step="1" value="1" />
+        </div>
+        <fieldset class="panel-palette-setting">
+          <legend>Couleur de lecture</legend>
+          <div data-panel-palette-group="nuit">${renderPanelPaletteOptions("nuit")}</div>
+          <div data-panel-palette-group="aube">${renderPanelPaletteOptions("aube")}</div>
+        </fieldset>
+        <button class="panel-reset-preferences" data-panel-writing-reset type="button">Réinitialiser les réglages</button>
       </section>
       <section class="settings-card">
         <h2>Affichage</h2>
-        <p class="settings-empty">Aucune option d’affichage disponible.</p>
+        <button class="setting-toggle is-on" data-display-setting="wordCount" type="button" role="switch" aria-checked="true">
+          <span>Compteur de mots</span><i aria-hidden="true"></i>
+        </button>
+        <button class="setting-toggle is-on" data-display-setting="characterCount" type="button" role="switch" aria-checked="true">
+          <span>Compteur de caractères</span><i aria-hidden="true"></i>
+        </button>
+        <button class="setting-toggle is-on" data-display-setting="lineCount" type="button" role="switch" aria-checked="true">
+          <span>Nombre de lignes</span><i aria-hidden="true"></i>
+        </button>
+        <button class="setting-toggle" data-display-setting="markdownPreview" type="button" role="switch" aria-checked="false">
+          <span>Aperçu Markdown</span><i aria-hidden="true"></i>
+        </button>
       </section>
       <section class="settings-card focus-card">
         <h2>Mode concentration</h2>
-        <p class="settings-empty">Non disponible dans cette phase.</p>
+        <p>Masque les éléments non essentiels pour une écriture sans distraction.</p>
+        <button class="secondary-action focus-mode-toggle" data-focus-mode-toggle type="button" aria-label="Activer le mode concentration" aria-pressed="false">${icon("focus")}<span data-focus-mode-label>Activer</span></button>
       </section>
-      <section class="settings-card autosave-card">
-        <h2>Sauvegarde automatique</h2>
-        <p class="settings-empty">Non configurée.</p>
+      <section class="settings-card export-card" data-document-export hidden>
+        <h2>Exporter</h2>
+        <div class="export-actions">
+          <button class="secondary-action export-action" data-export-format="pdf" type="button">PDF</button>
+          <button class="secondary-action export-action" data-export-format="docx" type="button">Word (.docx)</button>
+        </div>
+        <p class="export-status" data-export-status aria-live="polite"></p>
       </section>
     </aside>`;
 }
@@ -97,7 +160,7 @@ export function renderAppShell(): string {
         <div class="sidebar-scroll">
           <section class="nav-section">
             <div class="section-heading"><h2>Documents récents</h2><button type="button" aria-label="Rechercher dans les documents" title="Recherche disponible dans une prochaine phase" disabled>${icon("search")}</button></div>
-            <div class="document-list">${renderRecentDocuments()}</div>
+            <div class="document-list" data-recent-documents>${renderRecentDocuments()}</div>
             <button class="open-document" data-document-action="open" type="button">${icon("folder")}<span>Ouvrir un document…</span></button>
           </section>
           <section class="nav-section styles-section">
@@ -106,12 +169,12 @@ export function renderAppShell(): string {
             <button class="view-all-templates" data-template-open type="button">Voir tous les modèles</button>
           </section>
         </div>
-        <button class="sidebar-settings" data-writing-preferences-open type="button">${icon("settings")}<span>Paramètres</span></button>
+        <button class="sidebar-settings" type="button" disabled title="Les réglages visuels sont disponibles dans la colonne droite">${icon("settings")}<span>Paramètres</span></button>
       </aside>
 
       <header class="topbar">
         <button class="icon-button reveal-left" type="button" aria-label="Afficher le panneau gauche">${icon("menu")}</button>
-        <div class="document-title"><button class="document-title-button" data-document-title type="button" aria-label="Renommer le document">Sans titre.md</button><input class="document-title-input" data-document-title-input aria-label="Nouveau nom du document" maxlength="255" hidden /><span class="saved-dot is-unsaved" data-document-save-dot></span><small data-document-status>Nouveau document</small></div>
+        <div class="document-title"><button class="document-title-button" data-document-title type="button" aria-label="Renommer le document">Sans titre</button><input class="document-title-input" data-document-title-input aria-label="Nouveau nom du document" maxlength="255" hidden /><span class="saved-dot is-unsaved" data-document-save-dot></span><small data-document-status>Nouveau document</small></div>
         <div class="topbar-actions">
           <div class="theme-switcher" aria-label="Choisir le thème">
             <button type="button" data-theme-option="aube" aria-pressed="false">${icon("sun")}<span>Aube</span></button>
@@ -120,7 +183,7 @@ export function renderAppShell(): string {
           <button class="icon-button document-action save-document" data-document-action="save" type="button" aria-label="Enregistrer" title="Enregistrer (Ctrl+S)">${icon("save")}</button>
           <button class="icon-button document-action save-document-as" data-document-action="save-as" type="button" aria-label="Enregistrer sous" title="Enregistrer sous (Ctrl+Maj+S)">${icon("saveAs")}</button>
           <button class="search-action" type="button" title="Recherche disponible dans une prochaine phase" disabled>${icon("search")}<span>Rechercher</span></button>
-          <button class="icon-button collapse-right" type="button" aria-label="Replier le panneau droit">${icon("menu")}</button>
+          <button class="icon-button collapse-right" type="button" aria-label="Fermer la colonne de personnalisation" aria-expanded="true">${icon("menu")}</button>
         </div>
       </header>
 
@@ -162,6 +225,5 @@ export function renderAppShell(): string {
           </footer>
         </section>
       </div>
-      ${renderWritingPreferencesDialog()}
     </div>`;
 }
