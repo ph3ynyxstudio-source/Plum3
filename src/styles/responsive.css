@@ -1,0 +1,115 @@
+@media (max-width: 1180px) {
+  :root {
+    --left-panel-width: 244px;
+    --right-panel-width: 270px;
+  }
+
+  .brand { padding-left: 14px; }
+  .brand-feather { width: 44px; font-size: 36px; }
+  .sidebar-copy strong { font-size: 17px; }
+  .sidebar-copy span,
+  .document-copy em { display: none; }
+  .editor-page,
+  .document-editor { padding-inline: 34px; }
+
+  .statusbar {
+    grid-template-columns: minmax(72px, 1fr) auto minmax(128px, 1fr);
+    gap: 12px;
+  }
+
+  .status-secondary,
+  .status-feather,
+  .status-save-time { display: none; }
+}
+
+@media (max-width: 1050px) {
+  .search-action { display: none; }
+}
+
+@media (max-width: 950px) {
+  :root {
+    --left-panel-width: 218px;
+    --right-panel-width: 218px;
+  }
+
+  .brand-feather { display: none; }
+
+  .topbar {
+    grid-template-columns: 38px minmax(0, 1fr) auto;
+    gap: 8px;
+    padding-inline: 12px;
+  }
+
+  .theme-switcher span,
+  .document-title small { display: none; }
+
+  .theme-switcher button {
+    width: 34px;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .editor-page,
+  .document-editor { padding-inline: 26px; }
+
+  .statusbar {
+    grid-template-columns: minmax(60px, 1fr) 22px minmax(118px, 1fr);
+    gap: 8px;
+    padding-inline: 10px;
+  }
+
+  .status-group { gap: 8px; }
+  .status-format { font-size: 0; }
+  .status-format::after { content: attr(data-short-label); font-size: 11px; }
+}
+
+@media (max-width: 900px) {
+  :root { --right-panel-width: 0px; }
+
+  .right-panel { display: none; }
+  .document-title small { display: none; }
+}
+
+@media (max-width: 800px) {
+  :root { --left-panel-width: 190px; }
+
+  .save-document-as { display: none; }
+  .topbar-actions { gap: 7px; }
+  .document-title { gap: 6px; }
+}
+
+@media (max-width: 700px) {
+  :root { --left-panel-width: 170px; }
+
+  .topbar {
+    gap: 6px;
+    padding-inline: 8px;
+  }
+
+  .topbar-actions { gap: 5px; }
+  .new-document { margin-inline: 12px; }
+  .sidebar-scroll { padding-inline: 10px; }
+
+  .template-dialog-backdrop { padding: 8px; }
+  .template-dialog { max-height: calc(100vh - 16px); }
+  .template-dialog-header,
+  .template-dialog-footer,
+  .template-list { padding: 16px; }
+  .template-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .template-dialog-footer { align-items: stretch; flex-direction: column; }
+  .template-genre { min-width: 0; }
+  .template-dialog-footer .dialog-actions { justify-content: stretch; }
+  .template-dialog-footer .dialog-action { flex: 1; }
+}
+
+@media (max-width: 640px) {
+  :root { --left-panel-width: 160px; }
+
+  .document-title strong { font-size: 13px; }
+  .workspace { margin-inline: 6px; }
+  .statusbar { margin-inline: 6px; }
+}
+
+@media (max-width: 430px) {
+  .template-grid { grid-template-columns: 1fr; }
+}

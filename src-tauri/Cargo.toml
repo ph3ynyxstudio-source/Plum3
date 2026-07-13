@@ -1,0 +1,18 @@
+[package]
+name = "plum3-de-nyx"
+version = "0.1.0"
+description = "Application desktop Plum3 de Nyx"
+authors = ["Ph3yNyx"]
+edition = "2021"
+
+[lib]
+name = "plum3_de_nyx_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+rfd = "0.15"

@@ -1,0 +1,128 @@
+:root {
+  --font-ui: "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  --font-editor: Georgia, "Times New Roman", serif;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --left-panel-width: 292px;
+  --right-panel-width: 308px;
+  --topbar-height: 68px;
+  --statusbar-height: 46px;
+  --motion-fast: 160ms ease;
+  --motion-normal: 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+:root,
+:root[data-theme="nuit"] {
+  color-scheme: dark;
+
+  --color-background-app: #101620;
+  --color-background-workspace: #171f2c;
+  --color-surface-panel: #141b27;
+  --color-surface-card: #1b2533;
+  --color-surface-elevated: #222d3d;
+  --color-surface-hover: #253142;
+  --color-surface-active: #302b40;
+
+  --color-text-primary: #ebe9e6;
+  --color-text-secondary: #bbb8bd;
+  --color-text-muted: #8d8a93;
+  --color-text-disabled: #666771;
+  --color-text-on-accent: #ffffff;
+  --color-text-editor: #e9e6e1;
+
+  --color-border-subtle: #283442;
+  --color-border-default: #364456;
+  --color-border-strong: #4a5a6f;
+
+  --color-accent: #9a7bb5;
+  --color-accent-hover: #aa8bc4;
+  --color-accent-active: #8667a2;
+  --color-accent-soft: #2c2638;
+  --color-focus-ring: rgba(165, 132, 193, 0.38);
+
+  --color-success: #739a7d;
+  --color-warning: #c08b53;
+  --color-danger: #c16c72;
+  --color-reading-classic: #e9e6e1;
+  --color-reading-ivory: #eee5d4;
+  --color-reading-light-blue: #dce7ef;
+  --color-reading-soft-gray: #cdd0d4;
+
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.14), 0 6px 18px rgba(0, 0, 0, 0.08);
+  --shadow-elevated: 0 14px 38px rgba(0, 0, 0, 0.3), 0 3px 10px rgba(0, 0, 0, 0.18);
+
+}
+
+:root[data-theme="aube"] {
+  color-scheme: light;
+  --color-background-app: #eee9e1;
+  --color-background-workspace: #f8f5ef;
+  --color-surface-panel: #f3efe8;
+  --color-surface-card: #fcfaf6;
+  --color-surface-elevated: #fffdf9;
+  --color-surface-hover: #ebe5dc;
+  --color-surface-active: #e8e0ef;
+
+  --color-text-primary: #302c34;
+  --color-text-secondary: #5e5864;
+  --color-text-muted: #7d7683;
+  --color-text-disabled: #aaa3ac;
+  --color-text-on-accent: #ffffff;
+  --color-text-editor: #38333b;
+
+  --color-border-subtle: #ded7cd;
+  --color-border-default: #cec5b9;
+  --color-border-strong: #b9aea1;
+
+  --color-accent: #765b91;
+  --color-accent-hover: #674e82;
+  --color-accent-active: #594372;
+  --color-accent-soft: #eee7f4;
+  --color-focus-ring: rgba(118, 91, 145, 0.32);
+
+  --color-success: #527660;
+  --color-warning: #9a6d35;
+  --color-danger: #a55358;
+  --color-reading-anthracite: #38333b;
+  --color-reading-dark-gray: #4a4650;
+  --color-reading-dark-brown: #4b3b34;
+
+  --shadow-card: 0 1px 2px rgba(56, 46, 39, 0.05), 0 4px 14px rgba(56, 46, 39, 0.04);
+  --shadow-elevated: 0 12px 34px rgba(48, 40, 35, 0.13), 0 2px 8px rgba(48, 40, 35, 0.07);
+}
+
+/* Alias de transition pour les composants non encore migrés. */
+:root {
+  --bg-app: var(--color-background-app);
+  --bg-panel: var(--color-surface-panel);
+  --bg-panel-strong: var(--color-surface-panel);
+  --bg-surface: var(--color-surface-card);
+  --bg-surface-raised: var(--color-surface-elevated);
+  --bg-editor: var(--color-background-workspace);
+  --bg-editor-soft: var(--color-surface-hover);
+  --bg-input: var(--color-surface-card);
+  --text-primary: var(--color-text-primary);
+  --text-secondary: var(--color-text-secondary);
+  --text-muted: var(--color-text-muted);
+  --text-editor: var(--color-text-editor);
+  --border-subtle: var(--color-border-subtle);
+  --border-strong: var(--color-border-strong);
+  --accent: var(--color-accent);
+  --accent-secondary: var(--color-accent-hover);
+  --accent-cyan: var(--color-accent);
+  --accent-warm: var(--color-warning);
+  --success: var(--color-success);
+  --selection: var(--color-surface-active);
+  --button-accent: var(--color-accent-soft);
+  --page-glow: var(--color-background-workspace);
+  --app-glow: var(--color-background-app);
+  --shadow-panel: var(--shadow-card);
+}
+
+@media (min-width: 1360px) {
+  :root {
+    --left-panel-width: 310px;
+    --right-panel-width: 326px;
+  }
+}
