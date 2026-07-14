@@ -407,7 +407,8 @@ mod tests {
     fn genere_un_docx_reel() {
         let path =
             std::env::temp_dir().join(format!("plum3-export-docx-{}.docx", std::process::id()));
-        let markdown = "# Titre\n\nUn texte **important**, *nuancé* et [lié](https://example.com).\n\n1. Un\n2. Deux\n\n| A | B |\n|---|---|\n| 1 | 2 |";
+        let markdown = "# Titre H1\n\n## Titre H2\n\n### Titre H3\n\nParagraphe **gras**, *italique* et [lié](https://example.com).\n\n- Un\n- Deux\n\n1. Premier\n2. Deuxième\n\n> Citation accentuée : déjà vu.\n\n```rust\nfn main() { println!(\"Plum3 🌙\"); }\n```\n\n| Élément | Valeur |\n|---|---|\n| Unicode | café — 東京 ✨ |\n\n---";
+        let source_before = markdown.as_bytes().to_vec();
 
         let style = ExportStyle {
             font_kind: ExportFontKind::Serif,
@@ -420,5 +421,7 @@ mod tests {
 
         assert!(bytes.starts_with(b"PK"));
         assert!(bytes.len() > 1_000);
+        assert_eq!(markdown.as_bytes(), source_before);
+        let _ = fs::remove_file(path);
     }
 }

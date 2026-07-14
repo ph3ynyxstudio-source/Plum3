@@ -57,7 +57,7 @@ export class AppDialog {
     await this.show({
       title,
       message,
-      actions: [{ id: "ok", label: "Compris", tone: "primary" }],
+      actions: [{ id: "ok", label: t("common.understood"), tone: "primary" }],
     });
   }
 
@@ -67,3 +67,4 @@ export class AppDialog {
     return element;
   }
 }
+import { t } from "../i18n/i18n";

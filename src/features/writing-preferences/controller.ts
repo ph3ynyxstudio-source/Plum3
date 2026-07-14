@@ -6,9 +6,9 @@ import {
   WIDTH_OPTIONS,
   type DawnPalette,
   type NightPalette,
-  type WritingPreferences,
 } from "./model";
 import { WritingPreferencesStorage } from "./storage";
+import { localeTag, subscribeLocale, t } from "../../i18n/i18n";
 
 export class WritingPreferencesController {
   private readonly panelFontSelect = this.requireElement<HTMLSelectElement>("[data-panel-writing-font]");
@@ -28,6 +28,7 @@ export class WritingPreferencesController {
     this.preferences = this.storage.load();
     FONT_LIBRARY.forEach((font) => this.availableFonts.set(font.id, this.isFontAvailable(font.name, font.genericFamily)));
     this.bindActions();
+    subscribeLocale(() => this.applyAndRender(false));
     this.applyAndRender(false);
   }
 
@@ -93,11 +94,11 @@ export class WritingPreferencesController {
 
   private async reset(): Promise<void> {
     const action = await this.dialog.show({
-      title: "Réinitialiser les réglages d’écriture ?",
-      message: "La typographie, la taille, l’interligne, la largeur et les couleurs de lecture retrouveront leurs valeurs par défaut.",
+      title: t("writing.resetTitle"),
+      message: t("writing.resetMessage"),
       actions: [
-        { id: "cancel", label: "Annuler" },
-        { id: "reset", label: "Réinitialiser", tone: "danger" },
+        { id: "cancel", label: t("common.cancel") },
+        { id: "reset", label: t("writing.resetAction"), tone: "danger" },
       ],
     });
     if (action !== "reset") return;
@@ -124,7 +125,7 @@ export class WritingPreferencesController {
     const widthIndex = Math.max(0, WIDTH_OPTIONS.findIndex((option) => option.id === width.id));
     this.panelFontSelect.value = font.id;
     this.panelFontSelect.style.fontFamily = appliedFamily;
-    this.panelFontStatus.textContent = isAvailable ? "Police disponible" : `Police de repli : ${font.fallbackName}`;
+    this.panelFontStatus.textContent = isAvailable ? t("writing.available") : t("writing.fallback", { name: font.fallbackName });
     this.panelFontSizeInput.value = String(this.preferences.fontSize);
     this.panelFontSizeInput.style.setProperty("--range-progress", `${((this.preferences.fontSize - 14) / 14) * 100}%`);
     this.panelLineHeightInput.value = String(this.preferences.lineHeight);
@@ -132,7 +133,7 @@ export class WritingPreferencesController {
     this.panelWidthInput.value = String(widthIndex);
     this.panelWidthInput.style.setProperty("--range-progress", `${(widthIndex / (WIDTH_OPTIONS.length - 1)) * 100}%`);
     this.requireElement<HTMLOutputElement>("[data-panel-font-size]").value = `${this.preferences.fontSize} px`;
-    this.requireElement<HTMLOutputElement>("[data-panel-line-height]").value = this.preferences.lineHeight.toLocaleString("fr-CA", { minimumFractionDigits: 1 });
+    this.requireElement<HTMLOutputElement>("[data-panel-line-height]").value = this.preferences.lineHeight.toLocaleString(localeTag(), { minimumFractionDigits: 1 });
     this.requireElement<HTMLOutputElement>("[data-panel-writing-width]").value = width.value.replace("px", " px");
     this.requireElement<HTMLButtonElement>("[data-panel-font-decrease]").disabled = this.preferences.fontSize <= 14;
     this.requireElement<HTMLButtonElement>("[data-panel-font-increase]").disabled = this.preferences.fontSize >= 28;
@@ -155,7 +156,7 @@ export class WritingPreferencesController {
     const canvas = document.createElement("canvas");
     const context = canvas.getContext("2d");
     if (!context) return false;
-    const samples = ["mmmmmmmmmmlliWW", "Plum3 de Nyx 012345", "Écrire avec grâce"];
+    const samples = ["mmmmmmmmmmlliWW", "Plum3 012345", "Écrire avec grâce"];
     return samples.some((sample) => {
       context.font = `72px ${genericFamily}`;
       const fallbackWidth = context.measureText(sample).width;

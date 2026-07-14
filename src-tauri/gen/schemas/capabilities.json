@@ -1,1 +1,1 @@
-{"default":{"identifier":"default","description":"Permissions minimales de la fenêtre principale","local":true,"windows":["main"],"permissions":["core:default","core:window:allow-destroy"]}}
+{"default":{"identifier":"default","description":"Permissions minimales de la fenêtre principale","local":true,"windows":["main"],"permissions":["core:event:allow-listen","core:event:allow-unlisten","core:window:allow-destroy","core:window:allow-set-title","core:app:allow-version","core:app:allow-tauri-version"]}}

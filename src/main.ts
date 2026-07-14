@@ -14,6 +14,9 @@ import { DisplayPreferencesController } from "./features/display-preferences/con
 import { DisplayPreferencesStorage } from "./features/display-preferences/storage";
 import { FocusModeController } from "./features/display-preferences/focus-mode-controller";
 import { DocumentExportController } from "./features/document-export/controller";
+import { SettingsController } from "./features/settings/controller";
+import { t, translateDocument } from "./i18n/i18n";
+import { AutosaveController } from "./features/autosave/controller";
 
 const app = document.querySelector<HTMLElement>("#app");
 
@@ -22,10 +25,16 @@ if (!app) {
 }
 
 app.innerHTML = renderAppShell();
+translateDocument(app);
 
 applyTheme(getInitialTheme());
 
+document.querySelectorAll<HTMLButtonElement>("[data-theme-option]").forEach((button) => {
+  button.addEventListener("click", () => applyTheme(button.dataset.themeOption as ThemeName));
+});
+
 const appDialog = new AppDialog();
+new SettingsController(appDialog).initialize();
 
 const documentStore = new DocumentStore();
 const fileService = new FileService();
@@ -37,6 +46,7 @@ const documentController = new DocumentController(
   new RecoveryDraftService(),
 );
 void documentController.initialize();
+new AutosaveController(documentStore, documentController, new RecoveryDraftService()).initialize();
 new DocumentRenameController(documentStore, fileService, appDialog).initialize();
 
 const writingPreferences = new WritingPreferencesController(
@@ -47,10 +57,6 @@ writingPreferences.initialize();
 new DisplayPreferencesController(new DisplayPreferencesStorage(), documentStore).initialize();
 new FocusModeController().initialize();
 new DocumentExportController(documentStore, appDialog).initialize();
-
-document.querySelectorAll<HTMLButtonElement>("[data-theme-option]").forEach((button) => {
-  button.addEventListener("click", () => applyTheme(button.dataset.themeOption as ThemeName));
-});
 
 const shell = document.querySelector<HTMLElement>(".app-shell");
 
@@ -70,6 +76,6 @@ rightPanelToggle?.addEventListener("click", () => {
   rightPanelToggle.setAttribute("aria-expanded", String(!isCollapsed));
   rightPanelToggle.setAttribute(
     "aria-label",
-    isCollapsed ? "Ouvrir la colonne de personnalisation" : "Fermer la colonne de personnalisation",
+    isCollapsed ? t("actions.openRight") : t("actions.closeRight"),
   );
 });

@@ -1,4 +1,5 @@
 import { NARRATIVE_GENRES, WRITING_TEMPLATES, type WritingTemplate } from "./writing-templates";
+import { subscribeLocale, t } from "../i18n/i18n";
 
 export interface TemplateSelection {
   template: WritingTemplate;
@@ -16,6 +17,7 @@ export class TemplateDialog {
 
   constructor() {
     this.renderTemplates();
+    subscribeLocale(() => this.renderTemplates());
     document.querySelectorAll<HTMLButtonElement>("[data-template-cancel]").forEach((button) => {
       button.addEventListener("click", () => this.finish(null));
     });
@@ -39,12 +41,13 @@ export class TemplateDialog {
   }
 
   private renderTemplates(): void {
+    this.list.replaceChildren();
     const categories = [...new Set(WRITING_TEMPLATES.map((template) => template.category))];
     categories.forEach((category) => {
       const group = document.createElement("section");
       group.className = "template-group";
       const heading = document.createElement("h3");
-      heading.textContent = category;
+      heading.textContent = t(this.categoryKey(category));
       const grid = document.createElement("div");
       grid.className = "template-grid";
       WRITING_TEMPLATES.filter((template) => template.category === category).forEach((template) => {
@@ -52,7 +55,12 @@ export class TemplateDialog {
         button.type = "button";
         button.className = "template-option";
         button.dataset.templateId = template.id;
-        button.innerHTML = `<span aria-hidden="true">${template.symbol}</span><strong>${template.name}</strong>`;
+        const symbol = document.createElement("span");
+        symbol.setAttribute("aria-hidden", "true");
+        symbol.textContent = template.symbol;
+        const name = document.createElement("strong");
+        name.textContent = t(`templates.${template.id}.name`);
+        button.append(symbol, name);
         button.addEventListener("click", () => this.select(template.id));
         button.addEventListener("dblclick", () => this.finish({ template, genre: this.genre.value }));
         grid.append(button);
@@ -60,6 +68,17 @@ export class TemplateDialog {
       group.append(heading, grid);
       this.list.append(group);
     });
+  }
+
+  private categoryKey(category: string): string {
+    const keys: Record<string, string> = {
+      "Général": "templates.category.general",
+      "Écriture narrative": "templates.category.narrative",
+      "Composition": "templates.category.composition",
+      "Publication": "templates.category.publication",
+      "Univers et worldbuilding": "templates.category.worldbuilding",
+    };
+    return keys[category] ?? category;
   }
 
   private select(templateId: string): void {
@@ -95,5 +114,5 @@ export class TemplateDialog {
 }
 
 export function renderGenreOptions(): string {
-  return ['<option value="">Aucun genre</option>', ...NARRATIVE_GENRES.map((genre) => `<option value="${genre}">${genre}</option>`)].join("");
+  return [`<option value="" data-i18n="templates.noGenre">${t("templates.noGenre")}</option>`, ...NARRATIVE_GENRES.map((genre) => `<option value="${genre}">${genre}</option>`)].join("");
 }

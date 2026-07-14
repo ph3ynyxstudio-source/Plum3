@@ -3,6 +3,7 @@ import { FileService } from "../services/file-service";
 import { AppDialog } from "../ui/app-dialog";
 import { displayDocumentName, DocumentNameError, validatedDocumentName } from "./document-name";
 import { DocumentStore } from "./document-state";
+import { subscribeLocale, t } from "../i18n/i18n";
 
 export class DocumentRenameController {
   private readonly display = this.requireElement<HTMLButtonElement>("[data-document-title]");
@@ -20,8 +21,11 @@ export class DocumentRenameController {
     this.input.addEventListener("blur", () => { if (this.editing) void this.commit(); });
     this.store.subscribe((state) => {
       this.display.textContent = displayDocumentName(state.name);
-      this.display.title = state.path ?? "Document non enregistré — cliquer pour renommer";
-      void getCurrentWindow().setTitle(`${state.name} — Plum3 de Nyx`).catch(() => undefined);
+      this.display.title = state.path ?? t("rename.unsavedTitle");
+      void getCurrentWindow().setTitle(`${state.name} — Plum3`).catch(() => undefined);
+    });
+    subscribeLocale(() => {
+      if (!this.store.current.path) this.display.title = t("rename.unsavedTitle");
     });
   }
 
@@ -51,7 +55,7 @@ export class DocumentRenameController {
       name = validatedDocumentName(this.input.value, previous.name);
     } catch (cause) {
       this.input.focus();
-      await this.dialog.showError("Nom de document invalide", cause instanceof DocumentNameError ? cause.message : "Ce nom ne peut pas être utilisé.");
+      await this.dialog.showError(t("rename.invalidTitle"), cause instanceof DocumentNameError ? cause.message : t("rename.windowsInvalid"));
       return;
     }
     if (name === previous.name) { this.cancel(); return; }
@@ -63,9 +67,9 @@ export class DocumentRenameController {
     }
 
     const action = await this.dialog.show({
-      title: "Renommer le fichier ?",
-      message: `« ${previous.name} » deviendra « ${name} » dans le même dossier.`,
-      actions: [{ id: "cancel", label: "Annuler" }, { id: "rename", label: "Renommer", tone: "primary" }],
+      title: t("rename.confirmTitle"),
+      message: t("rename.confirmMessage", { previous: previous.name, name }),
+      actions: [{ id: "cancel", label: t("common.cancel") }, { id: "rename", label: t("dialog.rename"), tone: "primary" }],
     });
     if (action !== "rename") { this.cancel(); return; }
     try {
@@ -73,7 +77,7 @@ export class DocumentRenameController {
       this.cancel();
     } catch (cause) {
       this.input.focus();
-      await this.dialog.showError("Renommage impossible", cause instanceof Error ? cause.message : "Le fichier n’a pas pu être renommé.");
+      await this.dialog.showError(t("rename.failedTitle"), cause instanceof Error ? cause.message : t("rename.failed"));
     }
   }
 

@@ -2,6 +2,7 @@ import type { DocumentStore } from "../../documents/document-state";
 import { renderMarkdownPreview } from "./markdown-preview";
 import type { DisplayPreferenceName, DisplayPreferences } from "./model";
 import { DisplayPreferencesStorage } from "./storage";
+import { subscribeLocale } from "../../i18n/i18n";
 
 const COUNT_SELECTORS: Record<Exclude<DisplayPreferenceName, "markdownPreview">, string> = {
   wordCount: "[data-word-count]",
@@ -33,6 +34,7 @@ export class DisplayPreferencesController {
     this.documentStore.subscribe((state) => {
       if (this.preferences.markdownPreview) renderMarkdownPreview(this.preview, state.content);
     });
+    subscribeLocale(() => this.apply());
     this.apply();
   }
 

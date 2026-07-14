@@ -56,6 +56,19 @@ impl RecentDocuments {
             .unwrap_or(false)
     }
 
+    pub fn remove(&self, path: &Path) -> bool {
+        let Ok(mut paths) = self.paths.lock() else {
+            return false;
+        };
+        let previous_len = paths.len();
+        paths.retain(|recent| recent != path);
+        let removed = paths.len() != previous_len;
+        if removed {
+            self.persist(&paths);
+        }
+        removed
+    }
+
     pub fn list(&self) -> Vec<RecentDocument> {
         let Ok(mut paths) = self.paths.lock() else {
             return Vec::new();
@@ -131,6 +144,21 @@ mod tests {
 
         let reloaded = RecentDocuments::load(history_path);
         assert!(reloaded.contains(&first));
+        let _ = fs::remove_dir_all(directory);
+    }
+
+    #[test]
+    fn retire_uniquement_l_entree_de_l_historique() {
+        let directory = test_directory();
+        fs::create_dir_all(&directory).expect("dossier créé");
+        let document = directory.join("conservé.md");
+        fs::write(&document, "contenu conservé").expect("fixture créée");
+        let recent = RecentDocuments::load(directory.join("recent-documents.txt"));
+        recent.record(&document);
+
+        assert!(recent.remove(&document));
+        assert!(recent.list().is_empty());
+        assert_eq!(fs::read_to_string(&document).unwrap(), "contenu conservé");
         let _ = fs::remove_dir_all(directory);
     }
 }

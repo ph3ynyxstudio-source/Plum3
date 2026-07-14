@@ -83,15 +83,42 @@ pub struct SaveDocumentResult {
 
 fn validate_file_name(name: &str) -> Result<(), FileCommandError> {
     let trimmed = name.trim();
-    let stem = Path::new(trimmed).file_stem().and_then(|value| value.to_str()).unwrap_or_default();
-    let reserved = matches!(stem.to_ascii_lowercase().as_str(), "con" | "prn" | "aux" | "nul")
-        || (stem.len() == 4 && (stem.to_ascii_lowercase().starts_with("com") || stem.to_ascii_lowercase().starts_with("lpt")) && stem[3..].parse::<u8>().is_ok_and(|number| (1..=9).contains(&number)));
-    if trimmed.is_empty() || trimmed == "." || trimmed == ".." || trimmed.ends_with(['.', ' '])
-        || trimmed.chars().any(|character| character < ' ' || "<>:\"/\\|?*".contains(character)) || reserved {
-        return Err(error("invalid_name", "Ce nom de fichier n’est pas autorisé par Windows."));
+    let stem = Path::new(trimmed)
+        .file_stem()
+        .and_then(|value| value.to_str())
+        .unwrap_or_default();
+    let reserved = matches!(
+        stem.to_ascii_lowercase().as_str(),
+        "con" | "prn" | "aux" | "nul"
+    ) || (stem.len() == 4
+        && (stem.to_ascii_lowercase().starts_with("com")
+            || stem.to_ascii_lowercase().starts_with("lpt"))
+        && stem[3..]
+            .parse::<u8>()
+            .is_ok_and(|number| (1..=9).contains(&number)));
+    if trimmed.is_empty()
+        || trimmed == "."
+        || trimmed == ".."
+        || trimmed.ends_with(['.', ' '])
+        || trimmed
+            .chars()
+            .any(|character| character < ' ' || "<>:\"/\\|?*".contains(character))
+        || reserved
+    {
+        return Err(error(
+            "invalid_name",
+            "Ce nom de fichier n’est pas autorisé par Windows.",
+        ));
     }
-    if Path::new(trimmed).file_name().and_then(|value| value.to_str()) != Some(trimmed) {
-        return Err(error("invalid_name", "Le document doit rester dans son dossier actuel."));
+    if Path::new(trimmed)
+        .file_name()
+        .and_then(|value| value.to_str())
+        != Some(trimmed)
+    {
+        return Err(error(
+            "invalid_name",
+            "Le document doit rester dans son dossier actuel.",
+        ));
     }
     validate_extension(Path::new(trimmed))
 }
@@ -119,7 +146,7 @@ fn validate_extension(path: &Path) -> Result<(), FileCommandError> {
     } else {
         Err(error(
             "unsupported_type",
-            "Plum3 de Nyx peut ouvrir et enregistrer uniquement des fichiers .md ou .txt.",
+            "Plum3 peut ouvrir et enregistrer uniquement des fichiers .md ou .txt.",
         ))
     }
 }
@@ -134,12 +161,9 @@ fn normalize_path(path: &Path) -> Result<PathBuf, FileCommandError> {
         });
     }
 
-    let parent = path.parent().ok_or_else(|| {
-        error(
-            "path_error",
-            "Le dossier de destination est introuvable.",
-        )
-    })?;
+    let parent = path
+        .parent()
+        .ok_or_else(|| error("path_error", "Le dossier de destination est introuvable."))?;
     let file_name = path.file_name().ok_or_else(|| {
         error(
             "path_error",
@@ -215,12 +239,25 @@ fn read_document(path: &Path) -> Result<LoadedDocument, FileCommandError> {
 
 #[tauri::command]
 pub fn choose_document_to_open(
+    locale: String,
     authorized_paths: tauri::State<'_, AuthorizedPaths>,
     recent_documents: tauri::State<'_, RecentDocuments>,
 ) -> Result<Option<LoadedDocument>, FileCommandError> {
+    let english = locale == "en";
     let Some(selected) = FileDialog::new()
-        .set_title("Ouvrir un document")
-        .add_filter("Documents Markdown et texte", &["md", "txt"])
+        .set_title(if english {
+            "Open a document"
+        } else {
+            "Ouvrir un document"
+        })
+        .add_filter(
+            if english {
+                "Markdown and text documents"
+            } else {
+                "Documents Markdown et texte"
+            },
+            &["md", "txt"],
+        )
         .pick_file()
     else {
         return Ok(None);
@@ -242,6 +279,14 @@ pub fn list_recent_documents(
 }
 
 #[tauri::command]
+pub fn remove_recent_document(
+    path: String,
+    recent_documents: tauri::State<'_, RecentDocuments>,
+) -> bool {
+    recent_documents.remove(Path::new(&path))
+}
+
+#[tauri::command]
 pub fn open_recent_document(
     path: String,
     authorized_paths: tauri::State<'_, AuthorizedPaths>,
@@ -252,7 +297,7 @@ pub fn open_recent_document(
     if !recent_documents.contains(&path) {
         return Err(error(
             "not_authorized",
-            "Ce document ne fait pas partie de l’historique récent de Plum3 de Nyx.",
+            "Ce document ne fait pas partie de l’historique récent de Plum3.",
         ));
     }
     authorized_paths.authorize(path.clone())?;
@@ -264,10 +309,16 @@ pub fn open_recent_document(
 #[tauri::command]
 pub fn choose_document_save_path(
     suggested_name: String,
+    locale: String,
     authorized_paths: tauri::State<'_, AuthorizedPaths>,
 ) -> Result<Option<SaveTarget>, FileCommandError> {
+    let english = locale == "en";
     let Some(selected) = FileDialog::new()
-        .set_title("Enregistrer le document sous")
+        .set_title(if english {
+            "Save document as"
+        } else {
+            "Enregistrer le document sous"
+        })
         .set_file_name(&suggested_name)
         .add_filter("Markdown", &["md"])
         .add_filter("Texte", &["txt"])
@@ -310,27 +361,58 @@ pub fn rename_document(
     Ok(result)
 }
 
-fn rename_document_inner(path: &str, new_name: &str, authorized_paths: &AuthorizedPaths) -> Result<SaveDocumentResult, FileCommandError> {
+fn rename_document_inner(
+    path: &str,
+    new_name: &str,
+    authorized_paths: &AuthorizedPaths,
+) -> Result<SaveDocumentResult, FileCommandError> {
     validate_file_name(new_name)?;
     let source = normalize_path(Path::new(path))?;
     validate_extension(&source)?;
     if !authorized_paths.contains(&source)? {
-        return Err(error("not_authorized", "Ce chemin n’a pas été choisi explicitement dans Plum3 de Nyx."));
+        return Err(error(
+            "not_authorized",
+            "Ce chemin n’a pas été choisi explicitement dans Plum3.",
+        ));
     }
-    let source_extension = source.extension().and_then(|value| value.to_str()).unwrap_or_default();
-    let target_extension = Path::new(new_name).extension().and_then(|value| value.to_str()).unwrap_or_default();
+    let source_extension = source
+        .extension()
+        .and_then(|value| value.to_str())
+        .unwrap_or_default();
+    let target_extension = Path::new(new_name)
+        .extension()
+        .and_then(|value| value.to_str())
+        .unwrap_or_default();
     if !source_extension.eq_ignore_ascii_case(target_extension) {
-        return Err(error("extension_change", "L’extension du document doit être conservée."));
+        return Err(error(
+            "extension_change",
+            "L’extension du document doit être conservée.",
+        ));
     }
-    let parent = source.parent().ok_or_else(|| error("path_error", "Le dossier du document est introuvable."))?;
+    let parent = source
+        .parent()
+        .ok_or_else(|| error("path_error", "Le dossier du document est introuvable."))?;
     let target = parent.join(new_name);
     if target.exists() {
-        return Err(error("already_exists", "Un fichier portant déjà ce nom existe dans ce dossier."));
+        return Err(error(
+            "already_exists",
+            "Un fichier portant déjà ce nom existe dans ce dossier.",
+        ));
     }
-    fs::rename(&source, &target).map_err(|source| error("rename_error", format!("Impossible de renommer le fichier : {source}")))?;
+    fs::rename(&source, &target).map_err(|source| {
+        error(
+            "rename_error",
+            format!("Impossible de renommer le fichier : {source}"),
+        )
+    })?;
     let normalized_target = normalize_path(&target)?;
     authorized_paths.authorize(normalized_target.clone())?;
-    let bytes = fs::read(&normalized_target).map_err(|source| error("read_error", format!("Impossible de vérifier le fichier renommé : {source}")))?;
+    let bytes = fs::read(&normalized_target).map_err(|source| {
+        error(
+            "read_error",
+            format!("Impossible de vérifier le fichier renommé : {source}"),
+        )
+    })?;
     Ok(SaveDocumentResult {
         path: normalized_target.to_string_lossy().into_owned(),
         name: file_name(&normalized_target),
@@ -348,7 +430,7 @@ fn save_document_inner(
     if !authorized_paths.contains(&path)? {
         return Err(error(
             "not_authorized",
-            "Ce chemin n’a pas été choisi explicitement dans Plum3 de Nyx.",
+            "Ce chemin n’a pas été choisi explicitement dans Plum3.",
         ));
     }
 
@@ -384,12 +466,13 @@ fn save_document_inner(
             format!("Impossible d’enregistrer le document : {source}"),
         )
     })?;
-    file.write_all(request.content.as_bytes()).map_err(|source| {
-        error(
-            "write_error",
-            format!("L’écriture du document a échoué : {source}"),
-        )
-    })?;
+    file.write_all(request.content.as_bytes())
+        .map_err(|source| {
+            error(
+                "write_error",
+                format!("L’écriture du document a échoué : {source}"),
+            )
+        })?;
     file.sync_all().map_err(|source| {
         error(
             "write_error",
@@ -488,8 +571,14 @@ mod tests {
             &state,
         );
 
-        assert_eq!(result.expect_err("écrasement refusé").code, "already_exists");
-        assert_eq!(fs::read_to_string(&path).expect("fixture lisible"), "contenu existant");
+        assert_eq!(
+            result.expect_err("écrasement refusé").code,
+            "already_exists"
+        );
+        assert_eq!(
+            fs::read_to_string(&path).expect("fixture lisible"),
+            "contenu existant"
+        );
         let _ = fs::remove_file(path);
     }
 
@@ -524,19 +613,37 @@ mod tests {
         fs::write(&source, "contenu inchangé").expect("fixture créée");
         let normalized = normalize_path(&source).expect("chemin valide");
         state.authorize(normalized.clone()).expect("autorisation");
-        let target_name = format!("plum3-rename-target-{}.md", SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos());
+        let target_name = format!(
+            "plum3-rename-target-{}.md",
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        );
         let target = source.parent().unwrap().join(&target_name);
-        let result = rename_document_inner(&normalized.to_string_lossy(), &target_name, &state).expect("renommage réussi");
+        let result = rename_document_inner(&normalized.to_string_lossy(), &target_name, &state)
+            .expect("renommage réussi");
         assert_eq!(result.name, target_name);
-        assert_eq!(fs::read_to_string(&target).expect("contenu lisible"), "contenu inchangé");
+        assert_eq!(
+            fs::read_to_string(&target).expect("contenu lisible"),
+            "contenu inchangé"
+        );
         assert!(!source.exists());
         let _ = fs::remove_file(target);
     }
 
     #[test]
     fn refuse_conflit_et_nom_invalide() {
-        assert_eq!(validate_file_name("CON.md").expect_err("nom réservé").code, "invalid_name");
-        assert_eq!(validate_file_name("dossier/roman.md").expect_err("chemin refusé").code, "invalid_name");
+        assert_eq!(
+            validate_file_name("CON.md").expect_err("nom réservé").code,
+            "invalid_name"
+        );
+        assert_eq!(
+            validate_file_name("dossier/roman.md")
+                .expect_err("chemin refusé")
+                .code,
+            "invalid_name"
+        );
         let state = AuthorizedPaths::default();
         let source = test_path("rename-conflict-source");
         let target = test_path("rename-conflict-target");
@@ -544,7 +651,12 @@ mod tests {
         fs::write(&target, "cible").unwrap();
         let normalized = normalize_path(&source).unwrap();
         state.authorize(normalized.clone()).unwrap();
-        let error = rename_document_inner(&normalized.to_string_lossy(), target.file_name().unwrap().to_str().unwrap(), &state).expect_err("conflit attendu");
+        let error = rename_document_inner(
+            &normalized.to_string_lossy(),
+            target.file_name().unwrap().to_str().unwrap(),
+            &state,
+        )
+        .expect_err("conflit attendu");
         assert_eq!(error.code, "already_exists");
         let _ = fs::remove_file(source);
         let _ = fs::remove_file(target);

@@ -1,3 +1,5 @@
+import { subscribeLocale, t } from "../../i18n/i18n";
+
 export class FocusModeController {
   private readonly shell = this.requireElement<HTMLElement>(".app-shell");
   private readonly toggle = this.requireElement<HTMLButtonElement>("[data-focus-mode-toggle]");
@@ -12,16 +14,22 @@ export class FocusModeController {
       event.preventDefault();
       this.setActive(false);
     });
+    subscribeLocale(() => this.render());
+    this.render();
   }
 
   private setActive(active: boolean): void {
     this.active = active;
     this.shell.classList.toggle("is-focus-mode", active);
-    this.toggle.setAttribute("aria-pressed", String(active));
-    this.toggle.setAttribute("aria-label", active ? "Quitter le mode concentration" : "Activer le mode concentration");
-    this.label.textContent = active ? "Quitter" : "Activer";
+    this.render();
     if (active && !this.editor.hidden) this.editor.focus();
     if (!active) this.toggle.focus();
+  }
+
+  private render(): void {
+    this.toggle.setAttribute("aria-pressed", String(this.active));
+    this.toggle.setAttribute("aria-label", this.active ? t("focus.disableLabel") : t("focus.enableLabel"));
+    this.label.textContent = this.active ? t("focus.disable") : t("focus.enable");
   }
 
   private requireElement<T extends HTMLElement>(selector: string): T {

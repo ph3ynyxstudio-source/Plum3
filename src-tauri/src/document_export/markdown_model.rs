@@ -270,4 +270,38 @@ mod tests {
             .iter()
             .any(|span| span.italic && span.text == "italique"));
     }
+
+    #[test]
+    fn conserve_tous_les_blocs_attendus_par_les_exports() {
+        let blocks = parse_markdown(
+            "# H1\n\n## H2\n\n### H3\n\nTexte **gras**, *italique* et [lien](https://example.com).\n\n- puce\n\n1. numéro\n\n> citation\n\n```txt\ncode 🌙\n```\n\n---\n\n| A | B |\n|---|---|\n| é | 東京 |",
+        );
+        assert!(blocks
+            .iter()
+            .any(|block| matches!(block, Block::Heading { level: 1, .. })));
+        assert!(blocks
+            .iter()
+            .any(|block| matches!(block, Block::Heading { level: 2, .. })));
+        assert!(blocks
+            .iter()
+            .any(|block| matches!(block, Block::Heading { level: 3, .. })));
+        assert!(blocks
+            .iter()
+            .any(|block| matches!(block, Block::List { ordered: false, .. })));
+        assert!(blocks
+            .iter()
+            .any(|block| matches!(block, Block::List { ordered: true, .. })));
+        assert!(blocks.iter().any(|block| matches!(block, Block::Quote(_))));
+        assert!(blocks.iter().any(|block| matches!(block, Block::Code(_))));
+        assert!(blocks.iter().any(|block| matches!(block, Block::Rule)));
+        assert!(blocks
+            .iter()
+            .any(|block| matches!(block, Block::Table { .. })));
+        assert!(blocks.iter().any(|block| match block {
+            Block::Paragraph(spans) => spans
+                .iter()
+                .any(|span| span.link.as_deref() == Some("https://example.com")),
+            _ => false,
+        }));
+    }
 }

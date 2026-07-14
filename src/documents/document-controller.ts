@@ -7,6 +7,7 @@ import { DocumentStore, type FileVersion } from "./document-state";
 import { recoveredDocumentName, RecoveryDraftService } from "./recovery-draft";
 import { displayDocumentName } from "./document-name";
 import { icon } from "../ui/icons";
+import { localeTag, subscribeLocale, t } from "../i18n/i18n";
 
 export class DocumentController {
   private readonly editor = this.requireElement<HTMLTextAreaElement>("[data-document-editor]");
@@ -52,14 +53,18 @@ export class DocumentController {
         void this.refreshRecentDocuments();
       }
     });
+    subscribeLocale(() => {
+      this.render();
+      void this.refreshRecentDocuments();
+    });
 
     await getCurrentWindow().onCloseRequested(async (event) => {
       if (this.closing || !this.store.isDirty) return;
       event.preventDefault();
       if (this.busy) {
         await this.dialog.showError(
-          "Opération en cours",
-          "Terminez ou annulez l’opération de fichier avant de fermer l’application.",
+          t("dialog.operationInProgress"),
+          t("dialog.operationMessage"),
         );
         return;
       }
@@ -71,10 +76,22 @@ export class DocumentController {
           await getCurrentWindow().destroy();
         } catch (cause) {
           this.closing = false;
-          await this.showFileError("Impossible de fermer l’application", cause);
+          await this.showFileError(t("error.closeApp"), cause);
         }
       }
     });
+  }
+
+  async autosaveCurrentDocument(): Promise<boolean> {
+    if (this.busy || !this.store.isDirty || !this.store.current.path) return false;
+    const document = this.store.current;
+    return this.runBusy(async () =>
+      this.writeDocument(
+        { path: document.path!, name: document.name, exists: true },
+        document.version,
+        false,
+      ),
+    );
   }
 
   private bindActions(): void {
@@ -94,6 +111,12 @@ export class DocumentController {
     });
     this.recentDocuments.addEventListener("click", (event) => {
       const target = event.target as Element | null;
+      const removeButton = target?.closest<HTMLButtonElement>("[data-remove-recent-path]");
+      if (removeButton?.dataset.removeRecentPath) {
+        event.preventDefault();
+        void this.removeRecentDocument(removeButton.dataset.removeRecentPath);
+        return;
+      }
       const button = target?.closest<HTMLButtonElement>("[data-recent-document-path]");
       if (button?.dataset.recentDocumentPath) {
         void this.openRecentDocument(button.dataset.recentDocumentPath);
@@ -123,11 +146,20 @@ export class DocumentController {
     });
   }
 
+  private async removeRecentDocument(path: string): Promise<void> {
+    try {
+      await this.files.removeRecentDocument(path);
+      await this.refreshRecentDocuments();
+    } catch (cause) {
+      await this.showFileError(t("dialog.removeRecentError"), cause);
+    }
+  }
+
   private async openTemplateAssistant(initialTemplateId?: string): Promise<void> {
     if (this.busy) return;
     const selection = await this.templates.show(initialTemplateId);
     if (!selection) return;
-    if (!(await this.resolveUnsavedChanges("créer un document depuis un modèle"))) return;
+    if (!(await this.resolveUnsavedChanges(t("dialog.createFromTemplate")))) return;
     const content = buildTemplateContent(selection.template, selection.genre);
     this.recoveryDrafts.clear();
     this.store.createFromTemplate(templateDocumentName(selection.template), content);
@@ -135,7 +167,7 @@ export class DocumentController {
   }
 
   private async openDocument(): Promise<void> {
-    if (!(await this.resolveUnsavedChanges("ouvrir un autre document"))) return;
+    if (!(await this.resolveUnsavedChanges(t("dialog.openAnother")))) return;
     await this.runBusy(async () => {
       try {
         const document = await this.files.chooseDocumentToOpen();
@@ -145,14 +177,14 @@ export class DocumentController {
           this.editor.focus();
         }
       } catch (cause) {
-        await this.showFileError("Impossible d’ouvrir le document", cause);
+        await this.showFileError(t("error.openDocument"), cause);
       }
     });
   }
 
   private async openRecentDocument(path: string): Promise<void> {
     if (this.busy) return;
-    if (!(await this.resolveUnsavedChanges("ouvrir un autre document"))) return;
+    if (!(await this.resolveUnsavedChanges(t("dialog.openAnother")))) return;
     await this.runBusy(async () => {
       try {
         const document = await this.files.openRecentDocument(path);
@@ -161,7 +193,7 @@ export class DocumentController {
         this.editor.focus();
       } catch (cause) {
         await this.refreshRecentDocuments();
-        await this.showFileError("Impossible d’ouvrir le document récent", cause);
+        await this.showFileError(t("error.openRecent"), cause);
       }
     });
   }
@@ -190,11 +222,11 @@ export class DocumentController {
         let allowOverwrite = false;
         if (target.exists) {
           const action = await this.dialog.show({
-            title: "Remplacer le fichier existant ?",
-            message: `« ${target.name} » existe déjà. Son contenu sera remplacé uniquement si vous confirmez.`,
+            title: t("dialog.replaceTitle"),
+            message: t("dialog.replaceMessage", { name: target.name }),
             actions: [
-              { id: "cancel", label: "Annuler" },
-              { id: "overwrite", label: "Remplacer", tone: "danger" },
+              { id: "cancel", label: t("common.cancel") },
+              { id: "overwrite", label: t("dialog.replace"), tone: "danger" },
             ],
           });
           if (action !== "overwrite") return false;
@@ -204,7 +236,7 @@ export class DocumentController {
         const expectedVersion = target.path === this.store.current.path ? this.store.current.version : null;
         return this.writeDocument(target, expectedVersion, allowOverwrite);
       } catch (cause) {
-        await this.showFileError("Impossible de choisir la destination", cause);
+        await this.showFileError(t("error.chooseDestination"), cause);
         return false;
       }
     });
@@ -232,18 +264,18 @@ export class DocumentController {
         !allowOverwrite
       ) {
         const action = await this.dialog.show({
-          title: "Le fichier a changé",
+          title: t("dialog.fileChanged"),
           message: cause.message,
           actions: [
-            { id: "cancel", label: "Annuler" },
-            { id: "overwrite", label: "Écraser quand même", tone: "danger" },
+            { id: "cancel", label: t("common.cancel") },
+            { id: "overwrite", label: t("dialog.overwrite"), tone: "danger" },
           ],
         });
         if (action === "overwrite") return this.writeDocument(target, expectedVersion, true);
         return false;
       }
 
-      await this.showFileError("Enregistrement impossible", cause);
+      await this.showFileError(t("error.saveFailed"), cause);
       return false;
     }
   }
@@ -252,12 +284,12 @@ export class DocumentController {
     if (!this.store.isDirty) return true;
 
     const action = await this.dialog.show({
-      title: "Modifications non sauvegardées",
-      message: `Voulez-vous enregistrer « ${this.store.current.name} » avant de ${nextAction} ?`,
+      title: t("dialog.unsavedTitle"),
+      message: t("dialog.unsavedMessage", { name: this.store.current.name, action: nextAction }),
       actions: [
-        { id: "cancel", label: "Annuler" },
-        { id: "discard", label: "Ignorer", tone: "danger" },
-        { id: "save", label: "Enregistrer", tone: "primary" },
+        { id: "cancel", label: t("common.cancel") },
+        { id: "discard", label: t("dialog.discard"), tone: "danger" },
+        { id: "save", label: t("dialog.save"), tone: "primary" },
       ],
     });
 
@@ -268,14 +300,12 @@ export class DocumentController {
 
   private async resolveCloseRequest(): Promise<boolean> {
     const action = await this.dialog.show({
-      title: "Modifications non sauvegardées",
-      message:
-        `Voulez-vous enregistrer « ${this.store.current.name} » avant de fermer l’application ?\n\n` +
-        "Si vous fermez sans enregistrer, un brouillon local sera restauré au prochain démarrage.",
+      title: t("dialog.unsavedTitle"),
+      message: t("dialog.closeMessage", { name: this.store.current.name }),
       actions: [
-        { id: "cancel", label: "Annuler" },
-        { id: "recover", label: "Fermer sans enregistrer", tone: "danger" },
-        { id: "save", label: "Enregistrer", tone: "primary" },
+        { id: "cancel", label: t("common.cancel") },
+        { id: "recover", label: t("dialog.closeWithoutSaving"), tone: "danger" },
+        { id: "save", label: t("dialog.save"), tone: "primary" },
       ],
     });
 
@@ -286,7 +316,7 @@ export class DocumentController {
       this.recoveryDrafts.save(this.store.current);
       return true;
     } catch (cause) {
-      await this.showFileError("Brouillon de récupération impossible", cause);
+      await this.showFileError(t("error.recoveryFailed"), cause);
       return false;
     }
   }
@@ -300,28 +330,28 @@ export class DocumentController {
     this.title.title = state.path ?? "Document non enregistré";
     const isUnsaved = !state.path;
     this.documentStatus.textContent = dirty
-      ? "Modifié"
+      ? t("editor.modified")
       : isUnsaved
-        ? "Nouveau document"
-        : "Enregistré";
+        ? t("editor.newDocument")
+        : t("editor.saved");
     this.saveDots.forEach((dot) => {
       dot.classList.toggle("is-dirty", dirty);
       dot.classList.toggle("is-unsaved", isUnsaved && !dirty);
     });
     if (state.lastSavedAt) {
-      const savedDate = state.lastSavedAt.toLocaleDateString("fr-CA", {
+      const savedDate = state.lastSavedAt.toLocaleDateString(localeTag(), {
         day: "2-digit",
         month: "short",
         year: "numeric",
       });
-      const savedTime = state.lastSavedAt.toLocaleTimeString("fr-CA", {
+      const savedTime = state.lastSavedAt.toLocaleTimeString(localeTag(), {
         hour: "2-digit",
         minute: "2-digit",
         hour12: false,
       });
       this.lastSave.textContent = `${savedDate} à ${savedTime}`;
       this.lastSave.dateTime = state.lastSavedAt.toISOString();
-      this.lastSave.title = state.lastSavedAt.toLocaleString("fr-CA", {
+      this.lastSave.title = state.lastSavedAt.toLocaleString(localeTag(), {
         dateStyle: "full",
         timeStyle: "medium",
         hour12: false,
@@ -335,16 +365,16 @@ export class DocumentController {
     const trimmed = state.content.trim();
     const words = trimmed ? trimmed.split(/\s+/u).length : 0;
     const lines = state.content ? state.content.split(/\r\n|\r|\n/u).length : 1;
-    this.wordCount.textContent = `${words.toLocaleString("fr-CA")} mot${words === 1 ? "" : "s"}`;
-    this.characterCount.textContent = `${state.content.length.toLocaleString("fr-CA")} caractères`;
-    this.lineCount.textContent = `${lines.toLocaleString("fr-CA")} ligne${lines === 1 ? "" : "s"}`;
+    this.wordCount.textContent = t("editor.words", { count: words });
+    this.characterCount.textContent = t("editor.characters", { count: state.content.length });
+    this.lineCount.textContent = t("editor.lines", { count: lines });
 
     const extension = state.name.split(".").pop()?.toLowerCase();
     const format = extension === "txt"
-      ? { full: "Texte", short: "TXT" }
+      ? { full: t("editor.text"), short: "TXT" }
       : extension === "md"
         ? { full: "Markdown", short: "MD" }
-        : { full: "Document", short: "DOC" };
+        : { full: t("editor.document"), short: "DOC" };
     this.documentFormat.textContent = format.full;
     this.documentFormat.dataset.shortLabel = format.short;
   }
@@ -361,12 +391,14 @@ export class DocumentController {
     if (documents.length === 0) {
       const empty = document.createElement("p");
       empty.className = "sidebar-empty";
-      empty.textContent = "Aucun document récent.";
+      empty.textContent = t("nav.noRecent");
       this.recentDocuments.replaceChildren(empty);
       return;
     }
 
     const cards = documents.map((recent) => {
+      const row = document.createElement("div");
+      row.className = "document-card-row";
       const button = document.createElement("button");
       button.className = "document-card";
       button.classList.toggle("is-active", recent.path === this.store.current.path);
@@ -393,7 +425,14 @@ export class DocumentController {
 
       button.append(documentIcon, copy);
       button.insertAdjacentHTML("beforeend", icon("chevronRight"));
-      return button;
+      const removeButton = document.createElement("button");
+      removeButton.className = "remove-recent-document";
+      removeButton.type = "button";
+      removeButton.dataset.removeRecentPath = recent.path;
+      removeButton.setAttribute("aria-label", t("nav.removeRecent", { name: displayDocumentName(recent.name) }));
+      removeButton.textContent = "×";
+      row.append(button, removeButton);
+      return row;
     });
     this.recentDocuments.replaceChildren(...cards);
   }
@@ -402,13 +441,13 @@ export class DocumentController {
     const modified = new Date(modifiedMillis);
     const today = new Date();
     if (modified.toDateString() === today.toDateString()) {
-      return modified.toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" });
+      return modified.toLocaleTimeString(localeTag(), { hour: "2-digit", minute: "2-digit" });
     }
-    return modified.toLocaleDateString("fr-CA", { day: "2-digit", month: "short" });
+    return modified.toLocaleDateString(localeTag(), { day: "2-digit", month: "short" });
   }
 
   private async showFileError(title: string, cause: unknown): Promise<void> {
-    const message = cause instanceof Error ? cause.message : "Une erreur inconnue est survenue.";
+    const message = cause instanceof Error ? cause.message : t("error.unexpected");
     await this.dialog.showError(title, message);
   }
 

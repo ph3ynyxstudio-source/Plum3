@@ -1,0 +1,13 @@
+{
+  "bundle": {
+    "targets": ["msi"],
+    "windows": {
+      "webviewInstallMode": {
+        "type": "offlineInstaller"
+      },
+      "wix": {
+        "language": ["fr-FR", "en-US"]
+      }
+    }
+  }
+}

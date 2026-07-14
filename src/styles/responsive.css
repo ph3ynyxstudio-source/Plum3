@@ -4,10 +4,7 @@
     --right-panel-width: 270px;
   }
 
-  .brand { padding-left: 14px; }
-  .brand-feather { width: 44px; font-size: 36px; }
-  .sidebar-copy strong { font-size: 17px; }
-  .sidebar-copy span,
+  .brand { min-height: 132px; }
   .document-copy em { display: none; }
   .editor-page,
   .document-editor { padding-inline: 34px; }
@@ -31,7 +28,7 @@
     --right-panel-width: 250px;
   }
 
-  .brand-feather { display: none; }
+  .brand { min-height: 118px; }
 
   .topbar {
     grid-template-columns: 38px minmax(0, 1fr) auto;

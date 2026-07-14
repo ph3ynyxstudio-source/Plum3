@@ -6,6 +6,11 @@
   "scripts": {
     "dev": "vite --port 1420",
     "build": "tsc && vite build",
+    "typecheck": "tsc --noEmit",
+    "version:check": "node scripts/check-version.mjs",
+    "lint": "eslint src --max-warnings=0",
+    "test": "vitest run",
+    "qa:performance-fixtures": "node scripts/generate-performance-fixtures.mjs",
     "preview": "vite preview",
     "tauri": "tauri"
   },
@@ -13,8 +18,12 @@
     "@tauri-apps/api": "^2.0.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@tauri-apps/cli": "^2.0.0",
+    "eslint": "^10.7.0",
     "typescript": "^5.8.0",
-    "vite": "^7.0.0"
+    "typescript-eslint": "^8.64.0",
+    "vite": "^7.0.0",
+    "vitest": "^4.1.10"
   }
 }

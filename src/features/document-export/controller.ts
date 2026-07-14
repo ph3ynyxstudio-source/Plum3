@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { DocumentStore } from "../../documents/document-state";
 import { AppDialog } from "../../ui/app-dialog";
+import { getLocale, t } from "../../i18n/i18n";
 
 type ExportFormat = "pdf" | "docx";
 type ExportFontKind = "serif" | "sans" | "mono";
@@ -8,11 +9,6 @@ type ExportFontKind = "serif" | "sans" | "mono";
 interface ExportResult {
   path: string;
   name: string;
-}
-
-interface ExportErrorValue {
-  code?: unknown;
-  message?: unknown;
 }
 
 export class DocumentExportController {
@@ -47,7 +43,7 @@ export class DocumentExportController {
     if (this.busy || !document.path) return;
 
     this.setBusy(true);
-    this.status.textContent = format === "pdf" ? "Création du PDF…" : "Création du document Word…";
+    this.status.textContent = format === "pdf" ? t("export.pdfCreating") : t("export.wordCreating");
     try {
       const result = await invoke<ExportResult | null>("export_document", {
         request: {
@@ -55,18 +51,16 @@ export class DocumentExportController {
           sourceName: document.name,
           content: document.content,
           style: this.readCurrentStyle(),
+          locale: getLocale(),
         },
       });
       this.status.textContent = result
-        ? `Copie créée : ${result.name}`
-        : "Export annulé.";
+        ? t("export.created", { name: result.name })
+        : t("export.cancelled");
       if (result) this.status.title = result.path;
-    } catch (cause) {
-      this.status.textContent = "Export impossible.";
-      await this.dialog.showError(
-        "Export impossible",
-        this.errorMessage(cause),
-      );
+    } catch {
+      this.status.textContent = t("export.failed");
+      await this.dialog.showError(t("export.failed"), t("error.unexpected"));
     } finally {
       this.setBusy(false);
     }
@@ -109,22 +103,6 @@ export class DocumentExportController {
     this.buttons.forEach((button) => {
       button.disabled = busy;
     });
-  }
-
-  private errorMessage(cause: unknown): string {
-    if (cause && typeof cause === "object") {
-      const value = cause as ExportErrorValue;
-      if (typeof value.message === "string") return value.message;
-    }
-    if (typeof cause === "string") {
-      try {
-        const value = JSON.parse(cause) as ExportErrorValue;
-        if (typeof value.message === "string") return value.message;
-      } catch {
-        return cause;
-      }
-    }
-    return "Une erreur inattendue empêche la création de la copie exportée.";
   }
 
   private requireElement<T extends HTMLElement>(selector: string): T {

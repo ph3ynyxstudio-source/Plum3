@@ -34,7 +34,7 @@ export function renderMarkdownPreview(container: HTMLElement, markdown: string):
   if (!markdown.trim()) {
     const empty = document.createElement("p");
     empty.className = "markdown-preview-empty";
-    empty.textContent = "L’aperçu apparaîtra ici dès que le document contiendra du texte.";
+    empty.textContent = t("editor.previewEmpty");
     container.append(empty);
     return;
   }
@@ -127,3 +127,4 @@ export function renderMarkdownPreview(container: HTMLElement, markdown: string):
     container.append(pre);
   }
 }
+import { t } from "../../i18n/i18n";

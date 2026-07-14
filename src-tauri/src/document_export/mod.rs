@@ -76,6 +76,7 @@ pub struct ExportRequest {
     pub source_name: String,
     pub content: String,
     pub style: ExportStyle,
+    pub locale: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -102,8 +103,13 @@ fn export_error(code: &str, message: impl Into<String>) -> ExportError {
 #[tauri::command]
 pub fn export_document(request: ExportRequest) -> Result<Option<ExportResult>, ExportError> {
     let suggested_name = suggested_export_name(&request.source_name, request.format);
+    let title = if request.locale == "en" {
+        format!("Export as {}", request.format.label())
+    } else {
+        format!("Exporter en {}", request.format.label())
+    };
     let Some(selected) = FileDialog::new()
-        .set_title(format!("Exporter en {}", request.format.label()))
+        .set_title(title)
         .set_file_name(&suggested_name)
         .add_filter(request.format.label(), &[request.format.extension()])
         .save_file()

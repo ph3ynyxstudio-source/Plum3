@@ -2,7 +2,7 @@
 
 ## Portée de cette phase
 
-Cette base implémente uniquement le shell visuel PC de Plum3 de Nyx :
+Cette base implémente uniquement le shell visuel PC de Plum3 :
 
 - barre supérieure;
 - bibliothèque repliable à gauche;

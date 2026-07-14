@@ -47,7 +47,7 @@ ne suggèrent pas de formulations et n’interprètent pas les sections créées
 ## Brouillon de récupération à la fermeture
 
 Lorsqu’un document modifié est fermé avec l’action **Fermer sans enregistrer**,
-Plum3 de Nyx conserve localement une copie de récupération. Au prochain
+Plum3 conserve localement une copie de récupération. Au prochain
 démarrage, son contenu est rouvert automatiquement comme document sans chemin,
 avec un titre commençant par « Brouillon récupéré ». Le fichier d’origine n’est
 jamais modifié par cette récupération.
@@ -61,7 +61,7 @@ perdre le texte.
 
 Chaque résultat est du texte Markdown portable. Une sauvegarde produit un simple
 fichier `.md`, lisible dans tout éditeur compatible, sans métadonnée propre à
-Plum3 de Nyx.
+Plum3.
 
 ## Vérifications de la phase
 

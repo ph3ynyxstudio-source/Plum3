@@ -1,4 +1,4 @@
-# Plum3 de Nyx
+# Plum3
 
 Base desktop minimale construite avec Tauri 2 et Vanilla TypeScript.
 

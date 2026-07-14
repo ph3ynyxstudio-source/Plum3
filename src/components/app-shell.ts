@@ -5,7 +5,7 @@ import { FONT_CATEGORIES, FONT_LIBRARY, PALETTES } from "../features/writing-pre
 import type { ThemeName } from "../theme/theme";
 
 function renderRecentDocuments(): string {
-  return '<p class="sidebar-empty">Aucun document récent.</p>';
+  return '<p class="sidebar-empty" data-i18n="nav.noRecent">Aucun document récent.</p>';
 }
 
 function renderWritingTemplates(): string {
@@ -15,15 +15,22 @@ function renderWritingTemplates(): string {
       (template) => `
         <button class="writing-style" data-template-quick="${template.id}" type="button">
           <span class="style-symbol">${template.symbol}</span>
-          <span>${template.shortName ?? template.name}</span>
+          <span data-i18n="templates.${template.id}.name">${template.shortName ?? template.name}</span>
         </button>`,
     )
     .join("");
 }
 
 function renderPanelFontOptions(): string {
+  const categoryKeys: Record<(typeof FONT_CATEGORIES)[number], string> = {
+    Narration: "narration",
+    Manuscrit: "manuscript",
+    Documentation: "documentation",
+    Développement: "development",
+    Composition: "composition",
+  };
   return FONT_CATEGORIES.map((category) => `
-    <optgroup label="${category}">
+    <optgroup label="${category}" data-i18n-label="writing.category.${categoryKeys[category]}">
       ${FONT_LIBRARY.filter((font) => font.category === category)
         .map((font) => `<option value="${font.id}">${font.name}</option>`)
         .join("")}
@@ -38,106 +45,117 @@ function renderPanelPaletteOptions(theme: ThemeName): string {
       data-panel-palette-theme="${theme}"
       type="button"
       aria-label="${palette.name}"
+      data-i18n-aria-label="palette.${palette.id}"
       title="${palette.name}"
+      data-i18n-title="palette.${palette.id}"
     ><i data-palette-swatch="${palette.id}" aria-hidden="true"></i></button>`).join("");
 }
 
 function renderToolbar(): string {
   return `
-    <div class="editor-toolbar" aria-label="Outils d’écriture">
-      <span class="toolbar-empty">Mise en forme Markdown disponible dans une prochaine phase.</span>
+    <div class="editor-toolbar" aria-label="Outils d’écriture" data-i18n-aria-label="toolbar.label">
+      <span class="toolbar-empty" data-i18n="toolbar.placeholder">Mise en forme Markdown disponible dans une prochaine phase.</span>
     </div>`;
 }
 
 function renderEditor(): string {
   return `
-    <main class="workspace" aria-label="Zone centrale d’écriture">
+    <main class="workspace" aria-label="Zone centrale d’écriture" data-i18n-aria-label="editor.workspace">
       ${renderToolbar()}
       <div class="editor-scroll">
         <textarea
           class="document-editor"
           data-document-editor
           aria-label="Contenu du document"
+          data-i18n-aria-label="editor.content"
           placeholder="Commence à écrire…"
+          data-i18n-placeholder="editor.placeholder"
           spellcheck="true"
         ></textarea>
-        <article class="markdown-preview" data-markdown-preview aria-label="Aperçu Markdown" hidden></article>
+        <article class="markdown-preview" data-markdown-preview aria-label="Aperçu Markdown" data-i18n-aria-label="editor.preview" hidden></article>
       </div>
     </main>`;
 }
 
 function renderRightPanel(): string {
   return `
-    <aside class="right-panel" aria-label="Réglages d’écriture">
+    <aside class="right-panel" aria-label="Réglages d’écriture" data-i18n-aria-label="writing.title">
       <section class="settings-card writing-settings-card">
-        <h2>Réglages d’écriture</h2>
+        <h2 data-i18n="writing.title">Réglages d’écriture</h2>
         <label class="panel-select-setting">
-          <span>Typographie</span>
+          <span data-i18n="writing.typography">Typographie</span>
           <select data-panel-writing-font>${renderPanelFontOptions()}</select>
           <small data-panel-font-status aria-live="polite"></small>
         </label>
         <div class="range-setting">
           <span>
-            <span>Taille de police</span>
+            <span data-i18n="writing.fontSize">Taille de police</span>
             <b class="range-value">
-              <button data-panel-font-decrease type="button" aria-label="Diminuer la taille du texte">−</button>
+              <button data-panel-font-decrease type="button" aria-label="Diminuer la taille du texte" data-i18n-aria-label="writing.decreaseFont">−</button>
               <output data-panel-font-size>18 px</output>
-              <button data-panel-font-increase type="button" aria-label="Augmenter la taille du texte">+</button>
+              <button data-panel-font-increase type="button" aria-label="Augmenter la taille du texte" data-i18n-aria-label="writing.increaseFont">+</button>
             </b>
           </span>
-          <input data-panel-writing-font-size aria-label="Taille de police" type="range" min="14" max="28" step="1" value="18" />
+          <input data-panel-writing-font-size aria-label="Taille de police" data-i18n-aria-label="writing.fontSize" type="range" min="14" max="28" step="1" value="18" />
         </div>
         <div class="range-setting">
           <span>
-            <span>Interlignage</span>
+            <span data-i18n="writing.lineHeight">Interlignage</span>
             <b class="range-value">
-              <button data-panel-line-height-decrease type="button" aria-label="Réduire l’interligne">−</button>
+              <button data-panel-line-height-decrease type="button" aria-label="Réduire l’interligne" data-i18n-aria-label="writing.decreaseLine">−</button>
               <output data-panel-line-height>1,7</output>
-              <button data-panel-line-height-increase type="button" aria-label="Augmenter l’interligne">+</button>
+              <button data-panel-line-height-increase type="button" aria-label="Augmenter l’interligne" data-i18n-aria-label="writing.increaseLine">+</button>
             </b>
           </span>
-          <input data-panel-writing-line-height aria-label="Interlignage" type="range" min="1.4" max="2" step="0.1" value="1.7" />
+          <input data-panel-writing-line-height aria-label="Interlignage" data-i18n-aria-label="writing.lineHeight" type="range" min="1.4" max="2" step="0.1" value="1.7" />
         </div>
         <div class="range-setting">
           <span>
-            <span>Largeur de lecture</span>
+            <span data-i18n="writing.readingWidth">Largeur de lecture</span>
             <b class="range-value">
-              <button data-panel-width-decrease type="button" aria-label="Réduire la largeur de lecture">−</button>
+              <button data-panel-width-decrease type="button" aria-label="Réduire la largeur de lecture" data-i18n-aria-label="writing.decreaseWidth">−</button>
               <output data-panel-writing-width>680 px</output>
-              <button data-panel-width-increase type="button" aria-label="Augmenter la largeur de lecture">+</button>
+              <button data-panel-width-increase type="button" aria-label="Augmenter la largeur de lecture" data-i18n-aria-label="writing.increaseWidth">+</button>
             </b>
           </span>
-          <input data-panel-writing-width-range aria-label="Largeur de lecture" type="range" min="0" max="3" step="1" value="1" />
+          <input data-panel-writing-width-range aria-label="Largeur de lecture" data-i18n-aria-label="writing.readingWidth" type="range" min="0" max="3" step="1" value="1" />
         </div>
         <fieldset class="panel-palette-setting">
-          <legend>Couleur de lecture</legend>
+          <legend data-i18n="writing.readingColor">Couleur de lecture</legend>
           <div data-panel-palette-group="nuit">${renderPanelPaletteOptions("nuit")}</div>
           <div data-panel-palette-group="aube">${renderPanelPaletteOptions("aube")}</div>
         </fieldset>
-        <button class="panel-reset-preferences" data-panel-writing-reset type="button">Réinitialiser les réglages</button>
+        <button class="panel-reset-preferences" data-panel-writing-reset type="button" data-i18n="writing.reset">Réinitialiser les réglages</button>
       </section>
       <section class="settings-card">
-        <h2>Affichage</h2>
+        <h2 data-i18n="display.title">Affichage</h2>
         <button class="setting-toggle is-on" data-display-setting="wordCount" type="button" role="switch" aria-checked="true">
-          <span>Compteur de mots</span><i aria-hidden="true"></i>
+          <span data-i18n="display.words">Compteur de mots</span><i aria-hidden="true"></i>
         </button>
         <button class="setting-toggle is-on" data-display-setting="characterCount" type="button" role="switch" aria-checked="true">
-          <span>Compteur de caractères</span><i aria-hidden="true"></i>
+          <span data-i18n="display.characters">Compteur de caractères</span><i aria-hidden="true"></i>
         </button>
         <button class="setting-toggle is-on" data-display-setting="lineCount" type="button" role="switch" aria-checked="true">
-          <span>Nombre de lignes</span><i aria-hidden="true"></i>
+          <span data-i18n="display.lines">Nombre de lignes</span><i aria-hidden="true"></i>
         </button>
         <button class="setting-toggle" data-display-setting="markdownPreview" type="button" role="switch" aria-checked="false">
-          <span>Aperçu Markdown</span><i aria-hidden="true"></i>
+          <span data-i18n="display.preview">Aperçu Markdown</span><i aria-hidden="true"></i>
         </button>
       </section>
       <section class="settings-card focus-card">
-        <h2>Mode concentration</h2>
-        <p>Masque les éléments non essentiels pour une écriture sans distraction.</p>
+        <h2 data-i18n="focus.title">Mode concentration</h2>
+        <p data-i18n="focus.description">Masque les éléments non essentiels pour une écriture sans distraction.</p>
         <button class="secondary-action focus-mode-toggle" data-focus-mode-toggle type="button" aria-label="Activer le mode concentration" aria-pressed="false">${icon("focus")}<span data-focus-mode-label>Activer</span></button>
       </section>
+      <section class="settings-card autosave-card">
+        <h2 data-i18n="autosave.title">Sauvegarde automatique</h2>
+        <button class="setting-toggle" data-autosave-toggle type="button" role="switch" aria-checked="false">
+          <span data-i18n="autosave.disabled">Désactivée</span><i aria-hidden="true"></i>
+        </button>
+        <p data-autosave-status data-i18n="autosave.draftOnly">Le brouillon local reste protégé jusqu’au premier enregistrement.</p>
+      </section>
       <section class="settings-card export-card" data-document-export hidden>
-        <h2>Exporter</h2>
+        <h2 data-i18n="export.title">Exporter</h2>
         <div class="export-actions">
           <button class="secondary-action export-action" data-export-format="pdf" type="button">PDF</button>
           <button class="secondary-action export-action" data-export-format="docx" type="button">Word (.docx)</button>
@@ -150,40 +168,42 @@ function renderRightPanel(): string {
 export function renderAppShell(): string {
   return `
     <div class="app-shell">
-      <aside class="left-panel" aria-label="Bibliothèque de documents">
+      <aside class="left-panel" aria-label="Bibliothèque de documents" data-i18n-aria-label="nav.library">
         <div class="brand">
-          <span class="brand-feather" aria-hidden="true">🪶</span>
-          <div class="sidebar-copy"><strong>Plum3 de Nyx</strong><span>Un espace calme pour écrire,<br />structurer et conserver tes idées.</span></div>
-          <button class="icon-button collapse-left" type="button" aria-label="Replier le panneau gauche">${icon("chevronLeft")}</button>
+          <div class="brand-logos">
+            <img class="brand-logo brand-logo-aube" src="/logo-aube.webp" alt="Plum3 — Dépose ton encre." />
+            <img class="brand-logo brand-logo-nuit" src="/logo-nuit.webp" alt="Plum3 — Dépose ton encre." />
+          </div>
+          <button class="icon-button collapse-left" type="button" aria-label="Replier le panneau gauche" data-i18n-aria-label="nav.collapseLeft">${icon("chevronLeft")}</button>
         </div>
-        <button class="new-document" data-document-action="new" type="button">${icon("plus")}<span>Nouvelle plume</span><b>🪶</b></button>
+        <button class="new-document" data-document-action="new" type="button">${icon("plus")}<span data-i18n="nav.new">Nouvelle plume</span><b>🪶</b></button>
         <div class="sidebar-scroll">
           <section class="nav-section">
-            <div class="section-heading"><h2>Documents récents</h2><button type="button" aria-label="Rechercher dans les documents" title="Recherche disponible dans une prochaine phase" disabled>${icon("search")}</button></div>
+            <div class="section-heading"><h2 data-i18n="nav.recent">Documents récents</h2><button type="button" aria-label="Rechercher dans les documents" data-i18n-aria-label="nav.searchDocuments" title="Recherche disponible dans une prochaine phase" data-i18n-title="nav.searchUnavailable" disabled>${icon("search")}</button></div>
             <div class="document-list" data-recent-documents>${renderRecentDocuments()}</div>
-            <button class="open-document" data-document-action="open" type="button">${icon("folder")}<span>Ouvrir un document…</span></button>
+            <button class="open-document" data-document-action="open" type="button">${icon("folder")}<span data-i18n="nav.open">Ouvrir un document…</span></button>
           </section>
           <section class="nav-section styles-section">
-            <div class="section-heading"><h2>Modèles d’écriture</h2></div>
+            <div class="section-heading"><h2 data-i18n="nav.templates">Modèles d’écriture</h2></div>
             <div class="writing-style-list">${renderWritingTemplates()}</div>
-            <button class="view-all-templates" data-template-open type="button">Voir tous les modèles</button>
+            <button class="view-all-templates" data-template-open type="button" data-i18n="nav.viewAllTemplates">Voir tous les modèles</button>
           </section>
         </div>
-        <button class="sidebar-settings" type="button" disabled title="Les réglages visuels sont disponibles dans la colonne droite">${icon("settings")}<span>Paramètres</span></button>
+        <button class="sidebar-settings" data-settings-open type="button">${icon("settings")}<span data-i18n="nav.settings">Paramètres</span></button>
       </aside>
 
       <header class="topbar">
-        <button class="icon-button reveal-left" type="button" aria-label="Afficher le panneau gauche">${icon("menu")}</button>
-        <div class="document-title"><button class="document-title-button" data-document-title type="button" aria-label="Renommer le document">Sans titre</button><input class="document-title-input" data-document-title-input aria-label="Nouveau nom du document" maxlength="255" hidden /><span class="saved-dot is-unsaved" data-document-save-dot></span><small data-document-status>Nouveau document</small></div>
+        <button class="icon-button reveal-left" type="button" aria-label="Afficher le panneau gauche" data-i18n-aria-label="nav.showLeft">${icon("menu")}</button>
+        <div class="document-title"><button class="document-title-button" data-document-title type="button" aria-label="Renommer le document" data-i18n-aria-label="editor.rename">Sans titre</button><input class="document-title-input" data-document-title-input aria-label="Nouveau nom du document" data-i18n-aria-label="editor.newName" maxlength="255" hidden /><span class="saved-dot is-unsaved" data-document-save-dot></span><small data-document-status>Nouveau document</small></div>
         <div class="topbar-actions">
-          <div class="theme-switcher" aria-label="Choisir le thème">
-            <button type="button" data-theme-option="aube" aria-pressed="false">${icon("sun")}<span>Aube</span></button>
-            <button type="button" data-theme-option="nuit" aria-pressed="false">${icon("moon")}<span>Nuit</span></button>
+          <div class="theme-switcher" aria-label="Choisir le thème" data-i18n-aria-label="theme.choose">
+            <button type="button" data-theme-option="aube" aria-pressed="false">${icon("sun")}<span data-i18n="theme.dawn">Aube</span></button>
+            <button type="button" data-theme-option="nuit" aria-pressed="false">${icon("moon")}<span data-i18n="theme.night">Nuit</span></button>
           </div>
-          <button class="icon-button document-action save-document" data-document-action="save" type="button" aria-label="Enregistrer" title="Enregistrer (Ctrl+S)">${icon("save")}</button>
-          <button class="icon-button document-action save-document-as" data-document-action="save-as" type="button" aria-label="Enregistrer sous" title="Enregistrer sous (Ctrl+Maj+S)">${icon("saveAs")}</button>
-          <button class="search-action" type="button" title="Recherche disponible dans une prochaine phase" disabled>${icon("search")}<span>Rechercher</span></button>
-          <button class="icon-button collapse-right" type="button" aria-label="Fermer la colonne de personnalisation" aria-expanded="true">${icon("menu")}</button>
+          <button class="icon-button document-action save-document" data-document-action="save" type="button" aria-label="Enregistrer" data-i18n-aria-label="actions.save" title="Enregistrer (Ctrl+S)" data-i18n-title="actions.saveShortcut">${icon("save")}</button>
+          <button class="icon-button document-action save-document-as" data-document-action="save-as" type="button" aria-label="Enregistrer sous" data-i18n-aria-label="actions.saveAs" title="Enregistrer sous… (Ctrl+Maj+S)" data-i18n-title="actions.saveAsShortcut">${icon("saveAs")}</button>
+          <button class="search-action" type="button" title="Recherche disponible dans une prochaine phase" data-i18n-title="nav.searchUnavailable" disabled>${icon("search")}<span data-i18n="actions.search">Rechercher</span></button>
+          <button class="icon-button collapse-right" type="button" aria-label="Fermer la colonne de personnalisation" data-i18n-aria-label="actions.closeRight" aria-expanded="true">${icon("menu")}</button>
         </div>
       </header>
 
@@ -201,7 +221,7 @@ export function renderAppShell(): string {
           <span class="status-feather">🪶</span>
         </div>
         <div class="status-group status-right">
-          <span class="status-save-label">Dernière sauvegarde <time class="status-save-time" data-last-save-time>—</time></span>
+          <span class="status-save-label"><span data-i18n="editor.lastSave">Dernière sauvegarde</span> <time class="status-save-time" data-last-save-time>—</time></span>
           <i class="saved-dot is-unsaved" data-document-save-dot></i>
         </div>
       </footer>
@@ -215,14 +235,55 @@ export function renderAppShell(): string {
       <div class="app-dialog-backdrop template-dialog-backdrop" data-template-dialog hidden>
         <section class="app-dialog template-dialog" role="dialog" aria-modal="true" aria-labelledby="template-dialog-title">
           <header class="template-dialog-header">
-            <div><h2 id="template-dialog-title">Créer avec un modèle</h2><p>Choisis un point de départ Markdown. Tout restera librement modifiable.</p></div>
-            <button class="icon-button" data-template-cancel type="button" aria-label="Fermer">×</button>
+            <div><h2 id="template-dialog-title" data-i18n="templates.dialogTitle">Créer avec un modèle</h2><p data-i18n="templates.dialogDescription">Choisis un point de départ Markdown. Tout restera librement modifiable.</p></div>
+            <button class="icon-button" data-template-cancel type="button" aria-label="Fermer" data-i18n-aria-label="common.close">×</button>
           </header>
           <div class="template-list" data-template-list></div>
           <footer class="template-dialog-footer">
-            <label class="template-genre" data-template-genre-field hidden>Genre optionnel<select data-template-genre>${renderGenreOptions()}</select></label>
-            <div class="dialog-actions"><button class="dialog-action is-neutral" data-template-cancel type="button">Annuler</button><button class="dialog-action is-primary" data-template-create type="button">Créer le document</button></div>
+            <label class="template-genre" data-template-genre-field hidden><span data-i18n="templates.optionalGenre">Genre optionnel</span><select data-template-genre>${renderGenreOptions()}</select></label>
+            <div class="dialog-actions"><button class="dialog-action is-neutral" data-template-cancel type="button" data-i18n="common.cancel">Annuler</button><button class="dialog-action is-primary" data-template-create type="button" data-i18n="templates.create">Créer le document</button></div>
           </footer>
+        </section>
+      </div>
+      <div class="app-dialog-backdrop settings-dialog-backdrop" data-settings-dialog hidden>
+        <section class="app-dialog settings-dialog" role="dialog" aria-modal="true" aria-labelledby="settings-dialog-title">
+          <header class="settings-dialog-header">
+            <h2 id="settings-dialog-title" data-i18n="settings.title">Paramètres</h2>
+            <button class="icon-button" data-settings-close type="button" aria-label="Fermer" data-i18n-aria-label="common.close">×</button>
+          </header>
+          <div class="settings-dialog-body" data-settings-view="settings">
+            <section class="settings-page-card">
+              <h3 data-i18n="settings.languageTitle">Langue / Language</h3>
+              <p data-i18n="settings.languageDescription">La langue change immédiatement et sera conservée au prochain lancement.</p>
+              <div class="language-options" role="radiogroup" aria-label="Langue / Language">
+                <button type="button" data-locale-option="fr" role="radio" aria-checked="false" data-i18n="settings.french">Français</button>
+                <button type="button" data-locale-option="en" role="radio" aria-checked="false" data-i18n="settings.english">English</button>
+              </div>
+            </section>
+            <button class="settings-about-link" data-about-open type="button"><span data-i18n="settings.about">À propos</span><span aria-hidden="true">›</span></button>
+          </div>
+          <div class="settings-dialog-body about-page" data-settings-view="about" hidden>
+            <button class="about-back" data-about-back type="button">‹ <span data-i18n="about.back">Retour aux paramètres</span></button>
+            <h3>Plum3</h3>
+            <p class="about-tagline" data-i18n="about.tagline">Dépose ton encre.</p>
+            <p data-about-version></p>
+            <p data-i18n="about.description">Un éditeur Markdown local-first pour écrire, structurer et conserver ses idées.</p>
+            <p data-i18n="about.developedBy">Développé par Ph3yNyx.</p>
+            <ul class="about-facts">
+              <li data-i18n="about.localFirst">Les documents restent sur cet appareil dans des fichiers Markdown ou texte locaux.</li>
+              <li data-i18n="about.noAccount">Aucun compte n’est requis.</li>
+              <li data-i18n="about.noTracking">Aucun suivi publicitaire ni aucune télémétrie ne sont intégrés.</li>
+            </ul>
+            <p data-about-system></p><p data-about-tauri></p>
+            <div class="about-links">
+              <button type="button" data-about-licenses data-i18n="about.licenses">Licences open source</button>
+              <button type="button" disabled><span data-i18n="about.privacy">Politique de confidentialité</span> — <span data-i18n="common.notConfigured">Non configuré</span></button>
+              <button type="button" disabled><span data-i18n="about.support">Soutien ou contact</span> — <span data-i18n="common.notConfigured">Non configuré</span></button>
+            </div>
+            <button class="secondary-action" data-about-copy type="button" data-i18n="about.copy">Copier les informations de version</button>
+            <p class="about-copy-status" data-about-copy-status aria-live="polite"></p>
+            <p class="about-copyright">© <span data-about-year></span> Ph3yNyx</p>
+          </div>
         </section>
       </div>
     </div>`;

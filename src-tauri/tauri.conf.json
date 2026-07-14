@@ -1,7 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Plum3 de Nyx",
-  "version": "0.1.0",
+  "productName": "Plum3",
   "identifier": "os.ph3ynyx.plum3",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -13,7 +12,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Plum3 de Nyx",
+        "title": "Plum3",
         "width": 960,
         "height": 640,
         "minWidth": 640,
@@ -21,11 +20,13 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; img-src 'self' asset: http://asset.localhost data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src ipc: http://ipc.localhost"
     }
   },
   "bundle": {
     "active": true,
-    "targets": "all"
+    "targets": ["msi"],
+    "publisher": "Ph3yNyx",
+    "icon": ["../assets/icon-plum3.png"]
   }
 }

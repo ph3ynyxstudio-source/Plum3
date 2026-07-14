@@ -24,7 +24,7 @@ colonne, y compris lorsque la fenêtre est étroite.
 
 ## Bibliothèque typographique
 
-Plum3 de Nyx propose une sélection fermée, organisée selon cinq usages :
+Plum3 propose une sélection fermée, organisée selon cinq usages :
 Narration, Manuscrit, Documentation, Développement et Composition. Cette
 approche évite une liste instable de toutes les polices installées sur Windows
 et conserve des choix lisibles, cohérents et faciles à retrouver.
