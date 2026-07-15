@@ -4,14 +4,14 @@
 
 - [ ] Réserver le nom **Plum3** dans Partner Center.
 - [ ] Remplacer `À_REMPLACER_PACKAGE_IDENTITY` et `À_REMPLACER_PUBLISHER` par les valeurs exactes de Partner Center.
-- [ ] Confirmer le Publisher display name **Ph3yNyx.Studio**. — Bloqué : valeur Partner Center non fournie.
+- [x] Confirmer le Publisher display name **Ph3yNyx.studio**. — Confirmé dans Partner Center; le champ MSI `Manufacturer` utilise exactement `Ph3yNyx.studio`.
 - [x] Vérifier la version canonique dans `src-tauri/Cargo.toml` avec `npm run version:check`. — Vérifié : `0.1.0` cohérente.
 - [ ] Construire le MSI x64 avec la configuration Store et WebView2 hors ligne. — Partiel : le MSI x64 standard est généré, mais la configuration Store hors ligne séparée n’a pas été exercée.
 - [x] Fournir une vraie icône Windows `.ico` multirésolution issue de la source officielle. — Vérifié : 16, 24, 32, 48, 64, 128 et 256 px, 32 bits.
 - [ ] Signer le MSI et ses exécutables avec un certificat accepté par Microsoft. — Vérifié non terminé : MSI et EXE `NotSigned`.
 - [ ] Fournir une URL HTTPS versionnée dont le binaire ne change pas après soumission.
-- [ ] Vérifier les paramètres d’installation silencieuse.
-- [ ] Tester installation, lancement, fermeture et désinstallation sur une machine dédiée.
+- [x] Vérifier les paramètres d’installation silencieuse. — MSI français installé avec `/qn`; code de sortie final `0`; installation dans `C:\Program Files\Plum3\`; raccourcis Bureau et menu Démarrer créés.
+- [ ] Tester installation, lancement, fermeture et désinstallation sur une machine dédiée. — Partiel : installation silencieuse réussie, Plum3 installé lancé, désinstallation silencieuse réussie et application supprimée correctement; fermeture et validation sur machine dédiée à confirmer.
 - [ ] Exécuter le Windows App Certification Kit et conserver son rapport.
 
 ## Offre commerciale
@@ -66,7 +66,7 @@
 ## Blocages actuels
 
 - ~~Icône Windows `.ico` valide requise par le bundler WiX (le fichier existant de 70 octets n’est pas exploitable).~~ Résolu : ICO multirésolution validé et bundle WiX généré.
-- Identité Publisher Partner Center.
+- ~~Identité Publisher Partner Center.~~ Résolu : `Ph3yNyx.studio` confirmé dans Partner Center et dans les métadonnées MSI.
 - Certificat de signature.
 - URL de soutien.
 - URL de politique de confidentialité.
@@ -108,12 +108,12 @@
 - Captures Store Aube et Nuit absentes.
 - Signature numérique absente du MSI et de l’exécutable.
 - URL HTTPS versionnée du MSI, URL de soutien et URL de confidentialité absentes.
-- Vérification de l’installation silencieuse, cycle installation/lancement/fermeture/désinstallation et rapport WACK sans preuve.
+- Fermeture, validation sur machine dédiée et rapport WACK sans preuve; installation silencieuse, lancement de Plum3 installé, désinstallation silencieuse et suppression correcte de l’application validés.
 - Tests manuels clavier, contraste, mise à l’échelle, largeur minimale et gros documents sans preuve.
 
 ### Bloqué
 
-- Réservation du nom, Package Identity, Publisher et Publisher display name : valeurs ou confirmation Partner Center requises.
+- Réservation du nom et Package Identity : valeurs ou confirmation Partner Center requises.
 - Marchés, prix, catégorie, classification d’âge, propriétés du produit et notes de certification : décisions humaines requises.
 - Signature : certificat accepté par Microsoft requis.
 - Politique de confidentialité et URL de soutien : contenus et adresses à fournir puis publier.
