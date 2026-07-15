@@ -19,3 +19,4 @@ rfd = "0.15"
 pulldown-cmark = { version = "0.13", default-features = false, features = ["html"] }
 printpdf = "0.9.1"
 docx-rs = "0.4.20"
+tauri-plugin-opener = "2.5.4"

@@ -54,7 +54,7 @@ function renderPanelPaletteOptions(theme: ThemeName): string {
 function renderToolbar(): string {
   return `
     <div class="editor-toolbar" aria-label="Outils d’écriture" data-i18n-aria-label="toolbar.label">
-      <span class="toolbar-empty" data-i18n="toolbar.placeholder">Mise en forme Markdown disponible dans une prochaine phase.</span>
+      <span class="toolbar-empty" data-i18n="toolbar.placeholder">Aperçu Markdown disponible. Les outils de mise en forme seront ajoutés dans une prochaine version.</span>
     </div>`;
 }
 
@@ -154,7 +154,7 @@ function renderRightPanel(): string {
         </button>
         <p data-autosave-status data-i18n="autosave.draftOnly">Le brouillon local reste protégé jusqu’au premier enregistrement.</p>
       </section>
-      <section class="settings-card export-card" data-document-export hidden>
+      <section class="settings-card export-card" data-document-export>
         <h2 data-i18n="export.title">Exporter</h2>
         <div class="export-actions">
           <button class="secondary-action export-action" data-export-format="pdf" type="button">PDF</button>
@@ -176,20 +176,21 @@ export function renderAppShell(): string {
           </div>
           <button class="icon-button collapse-left" type="button" aria-label="Replier le panneau gauche" data-i18n-aria-label="nav.collapseLeft">${icon("chevronLeft")}</button>
         </div>
-        <button class="new-document" data-document-action="new" type="button">${icon("plus")}<span data-i18n="nav.new">Nouvelle plume</span><b>🪶</b></button>
+        <button class="new-document" data-document-action="new" type="button" aria-label="Nouveau document" data-i18n-aria-label="nav.new" title="Nouveau document" data-i18n-title="nav.new">${icon("plus")}<span data-i18n="nav.new">Nouveau document</span><b>🪶</b></button>
         <div class="sidebar-scroll">
           <section class="nav-section">
-            <div class="section-heading"><h2 data-i18n="nav.recent">Documents récents</h2><button type="button" aria-label="Rechercher dans les documents" data-i18n-aria-label="nav.searchDocuments" title="Recherche disponible dans une prochaine phase" data-i18n-title="nav.searchUnavailable" disabled>${icon("search")}</button></div>
+            <div class="section-heading"><h2 data-i18n="nav.recent">Documents récents</h2></div>
             <div class="document-list" data-recent-documents>${renderRecentDocuments()}</div>
-            <button class="open-document" data-document-action="open" type="button">${icon("folder")}<span data-i18n="nav.open">Ouvrir un document…</span></button>
+            <button class="open-document" data-document-action="open" type="button" aria-label="Ouvrir un document" data-i18n-aria-label="nav.open" title="Ouvrir un document" data-i18n-title="nav.open">${icon("folderOpen")}<span data-i18n="nav.open">Ouvrir un document</span></button>
           </section>
           <section class="nav-section styles-section">
             <div class="section-heading"><h2 data-i18n="nav.templates">Modèles d’écriture</h2></div>
             <div class="writing-style-list">${renderWritingTemplates()}</div>
-            <button class="view-all-templates" data-template-open type="button" data-i18n="nav.viewAllTemplates">Voir tous les modèles</button>
+            <button class="view-all-templates" data-template-open type="button" aria-label="Modèles d’écriture" data-i18n-aria-label="nav.templates" title="Modèles d’écriture" data-i18n-title="nav.templates">${icon("templates")}<span data-i18n="nav.templates">Modèles d’écriture</span></button>
           </section>
         </div>
-        <button class="sidebar-settings" data-settings-open type="button">${icon("settings")}<span data-i18n="nav.settings">Paramètres</span></button>
+        <button class="sidebar-export" data-export-open type="button" aria-label="Exporter le document" data-i18n-aria-label="export.document" title="Exporter le document" data-i18n-title="export.document">${icon("export")}<span data-i18n="export.document">Exporter le document</span></button>
+        <button class="sidebar-settings" data-settings-open type="button" aria-label="Paramètres" data-i18n-aria-label="nav.settings" title="Paramètres" data-i18n-title="nav.settings">${icon("settings")}<span data-i18n="nav.settings">Paramètres</span></button>
       </aside>
 
       <header class="topbar">
@@ -202,7 +203,6 @@ export function renderAppShell(): string {
           </div>
           <button class="icon-button document-action save-document" data-document-action="save" type="button" aria-label="Enregistrer" data-i18n-aria-label="actions.save" title="Enregistrer (Ctrl+S)" data-i18n-title="actions.saveShortcut">${icon("save")}</button>
           <button class="icon-button document-action save-document-as" data-document-action="save-as" type="button" aria-label="Enregistrer sous" data-i18n-aria-label="actions.saveAs" title="Enregistrer sous… (Ctrl+Maj+S)" data-i18n-title="actions.saveAsShortcut">${icon("saveAs")}</button>
-          <button class="search-action" type="button" title="Recherche disponible dans une prochaine phase" data-i18n-title="nav.searchUnavailable" disabled>${icon("search")}<span data-i18n="actions.search">Rechercher</span></button>
           <button class="icon-button collapse-right" type="button" aria-label="Fermer la colonne de personnalisation" data-i18n-aria-label="actions.closeRight" aria-expanded="true">${icon("menu")}</button>
         </div>
       </header>
@@ -260,6 +260,12 @@ export function renderAppShell(): string {
                 <button type="button" data-locale-option="en" role="radio" aria-checked="false" data-i18n="settings.english">English</button>
               </div>
             </section>
+            <section class="settings-page-card feedback-card">
+              <h3 data-i18n="feedback.title">Retour utilisateur</h3>
+              <p data-i18n="feedback.description">Signalez un bug, proposez une amélioration ou partagez votre avis sur Plum3.</p>
+              <p class="feedback-examples" data-i18n="feedback.examples">Exemples : problème d’interface, export inattendu ou modèle difficile à utiliser.</p>
+              <button class="secondary-action feedback-email-action" data-feedback-email type="button" data-i18n="feedback.send">Envoyer un retour par courriel</button>
+            </section>
             <button class="settings-about-link" data-about-open type="button"><span data-i18n="settings.about">À propos</span><span aria-hidden="true">›</span></button>
           </div>
           <div class="settings-dialog-body about-page" data-settings-view="about" hidden>
@@ -268,7 +274,12 @@ export function renderAppShell(): string {
             <p class="about-tagline" data-i18n="about.tagline">Dépose ton encre.</p>
             <p data-about-version></p>
             <p data-i18n="about.description">Un éditeur Markdown local-first pour écrire, structurer et conserver ses idées.</p>
-            <p data-i18n="about.developedBy">Développé par Ph3yNyx.</p>
+            <p data-i18n="about.developedBy">Développé par Ph3yNyx.Studio</p>
+            <div class="about-studio">
+              <img class="about-studio-logo" src="/logo-ph3ynyx-studio.svg" alt="" aria-hidden="true" />
+              <p class="about-studio-name">Ph3yNyx.Studio</p>
+              <a class="about-studio-link" href="https://ph3ynyx.dev/" data-about-studio-url>https://ph3ynyx.dev/</a>
+            </div>
             <ul class="about-facts">
               <li data-i18n="about.localFirst">Les documents restent sur cet appareil dans des fichiers Markdown ou texte locaux.</li>
               <li data-i18n="about.noAccount">Aucun compte n’est requis.</li>

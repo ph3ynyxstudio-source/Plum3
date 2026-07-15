@@ -11,10 +11,55 @@ interface ExportResult {
   name: string;
 }
 
+interface ExportRequest {
+  format: ExportFormat;
+  sourceName: string;
+  content: string;
+  style: {
+    fontKind: ExportFontKind;
+    fontSize: number;
+    lineHeight: number;
+    textColor: string;
+  };
+  locale: string;
+}
+
+export type ExportInvoker = (request: ExportRequest) => Promise<ExportResult | null>;
+
+const invokeExport: ExportInvoker = (request) => invoke<ExportResult | null>("export_document", { request });
+
+function errorCode(cause: unknown): string | null {
+  if (typeof cause === "object" && cause !== null && "code" in cause) {
+    const code = (cause as { code?: unknown }).code;
+    return typeof code === "string" ? code : null;
+  }
+  if (typeof cause !== "string") return null;
+  try {
+    const parsed = JSON.parse(cause) as { code?: unknown };
+    return typeof parsed.code === "string" ? parsed.code : null;
+  } catch {
+    return null;
+  }
+}
+
+export function exportErrorMessage(cause: unknown): string {
+  switch (errorCode(cause)) {
+    case "export_write_error":
+      return t("export.writeFailed");
+    case "pdf_generation_error":
+      return t("export.pdfFailed");
+    case "docx_generation_error":
+      return t("export.docxFailed");
+    default:
+      return t("error.unexpected");
+  }
+}
+
 export class DocumentExportController {
   private readonly section = this.requireElement<HTMLElement>("[data-document-export]");
   private readonly editor = this.requireElement<HTMLTextAreaElement>("[data-document-editor]");
   private readonly status = this.requireElement<HTMLElement>("[data-export-status]");
+  private readonly menuButton = this.requireElement<HTMLButtonElement>("[data-export-open]");
   private readonly buttons = Array.from(
     this.section.querySelectorAll<HTMLButtonElement>("[data-export-format]"),
   );
@@ -23,6 +68,7 @@ export class DocumentExportController {
   constructor(
     private readonly store: DocumentStore,
     private readonly dialog: AppDialog,
+    private readonly invokeDocumentExport: ExportInvoker = invokeExport,
   ) {}
 
   initialize(): void {
@@ -31,36 +77,56 @@ export class DocumentExportController {
         void this.export(button.dataset.exportFormat as ExportFormat);
       });
     });
-    this.store.subscribe((state) => {
-      const hasOpenDocument = state.path !== null;
-      this.section.hidden = !hasOpenDocument;
-      if (!hasOpenDocument) this.status.textContent = "";
+    this.menuButton.addEventListener("click", () => {
+      void this.chooseFormat();
     });
+  }
+
+  private async chooseFormat(): Promise<void> {
+    if (this.busy) return;
+    const action = await this.dialog.show({
+      title: t("export.title"),
+      message: t("export.chooseFormat"),
+      actions: [
+        { id: "cancel", label: t("common.cancel") },
+        { id: "pdf", label: t("export.asPdf"), tone: "primary" },
+        { id: "docx", label: t("export.asDocx"), tone: "primary" },
+      ],
+    });
+    if (action === "pdf" || action === "docx") await this.export(action);
   }
 
   private async export(format: ExportFormat): Promise<void> {
     const document = this.store.current;
-    if (this.busy || !document.path) return;
+    if (this.busy) return;
 
     this.setBusy(true);
     this.status.textContent = format === "pdf" ? t("export.pdfCreating") : t("export.wordCreating");
     try {
-      const result = await invoke<ExportResult | null>("export_document", {
-        request: {
-          format,
-          sourceName: document.name,
-          content: document.content,
-          style: this.readCurrentStyle(),
-          locale: getLocale(),
-        },
+      const result = await this.invokeDocumentExport({
+        format,
+        sourceName: document.name,
+        content: document.content,
+        style: this.readCurrentStyle(),
+        locale: getLocale(),
       });
       this.status.textContent = result
         ? t("export.created", { name: result.name })
         : t("export.cancelled");
-      if (result) this.status.title = result.path;
-    } catch {
+      if (result) {
+        this.status.title = result.path;
+        await this.dialog.show({
+          title: t("export.createdTitle"),
+          message: t("export.created", { name: result.name }),
+          actions: [{ id: "ok", label: t("common.understood"), tone: "primary" }],
+        });
+      } else {
+        this.status.removeAttribute("title");
+      }
+    } catch (cause) {
       this.status.textContent = t("export.failed");
-      await this.dialog.showError(t("export.failed"), t("error.unexpected"));
+      this.status.removeAttribute("title");
+      await this.dialog.showError(t("export.failed"), exportErrorMessage(cause));
     } finally {
       this.setBusy(false);
     }
@@ -103,6 +169,7 @@ export class DocumentExportController {
     this.buttons.forEach((button) => {
       button.disabled = busy;
     });
+    this.menuButton.disabled = busy;
   }
 
   private requireElement<T extends HTMLElement>(selector: string): T {

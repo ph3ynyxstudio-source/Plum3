@@ -1,7 +1,33 @@
 import { getTauriVersion, getVersion } from "@tauri-apps/api/app";
 import { invoke } from "@tauri-apps/api/core";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { getLocale, setLocale, subscribeLocale, t, type Locale } from "../../i18n/i18n";
 import type { AppDialog } from "../../ui/app-dialog";
+
+const STUDIO_URL = "https://ph3ynyx.dev/";
+const FEEDBACK_RECIPIENT = "phey.rainville@hotmail.com";
+
+export function buildFeedbackEmailUrl(version: string): string {
+  const subject = t("feedback.emailSubject", { version });
+  const body = [
+    t("feedback.emailType"),
+    t("feedback.emailTypeOptions"),
+    "",
+    t("feedback.emailDescription"),
+    "",
+    t("feedback.emailSteps"),
+    "",
+    t("feedback.emailExpected"),
+    "",
+    t("feedback.emailAppVersion"),
+    version,
+    "",
+    t("feedback.emailWindowsVersion"),
+    "",
+  ].join("\r\n");
+
+  return `mailto:${FEEDBACK_RECIPIENT}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
 
 interface AppInfo {
   os: string;
@@ -31,6 +57,11 @@ export class SettingsController {
     document.querySelector<HTMLButtonElement>("[data-about-back]")?.addEventListener("click", () => this.showSettings());
     document.querySelector<HTMLButtonElement>("[data-about-copy]")?.addEventListener("click", () => void this.copyInfo());
     document.querySelector<HTMLButtonElement>("[data-about-licenses]")?.addEventListener("click", () => void this.showLicenses());
+    document.querySelector<HTMLButtonElement>("[data-feedback-email]")?.addEventListener("click", () => void this.sendFeedback());
+    document.querySelector<HTMLAnchorElement>("[data-about-studio-url]")?.addEventListener("click", (event) => {
+      event.preventDefault();
+      void this.openStudioWebsite();
+    });
     this.localeButtons.forEach((button) => {
       button.addEventListener("click", () => setLocale(button.dataset.localeOption as Locale));
     });
@@ -121,9 +152,27 @@ export class SettingsController {
     });
   }
 
+  private async openStudioWebsite(): Promise<void> {
+    try {
+      await openUrl(STUDIO_URL);
+    } catch {
+      this.copyStatus.textContent = t("about.websiteFailed");
+    }
+  }
+
+  private async sendFeedback(): Promise<void> {
+    try {
+      const version = this.version === "—" ? await getVersion() : this.version;
+      this.version = version;
+      await openUrl(buildFeedbackEmailUrl(version));
+    } catch {
+      await this.dialog.showError(t("feedback.errorTitle"), t("feedback.errorMessage"));
+    }
+  }
+
   private trapFocus(event: KeyboardEvent): void {
     const focusable = Array.from(
-      this.backdrop.querySelectorAll<HTMLElement>('button:not([disabled]), select, input, [tabindex]:not([tabindex="-1"])'),
+      this.backdrop.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], select, input, [tabindex]:not([tabindex="-1"])'),
     ).filter((element) => !element.closest<HTMLElement>("[hidden]"));
     if (focusable.length === 0) return;
     const first = focusable[0];

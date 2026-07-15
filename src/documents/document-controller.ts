@@ -7,7 +7,7 @@ import { DocumentStore, type FileVersion } from "./document-state";
 import { recoveredDocumentName, RecoveryDraftService } from "./recovery-draft";
 import { displayDocumentName } from "./document-name";
 import { icon } from "../ui/icons";
-import { localeTag, subscribeLocale, t } from "../i18n/i18n";
+import { getLocale, localeTag, subscribeLocale, t } from "../i18n/i18n";
 
 export class DocumentController {
   private readonly editor = this.requireElement<HTMLTextAreaElement>("[data-document-editor]");
@@ -160,7 +160,7 @@ export class DocumentController {
     const selection = await this.templates.show(initialTemplateId);
     if (!selection) return;
     if (!(await this.resolveUnsavedChanges(t("dialog.createFromTemplate")))) return;
-    const content = buildTemplateContent(selection.template, selection.genre);
+    const content = buildTemplateContent(selection.template, selection.genre, getLocale());
     this.recoveryDrafts.clear();
     this.store.createFromTemplate(templateDocumentName(selection.template), content);
     this.editor.focus();

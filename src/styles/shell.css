@@ -301,6 +301,7 @@
 
 .open-document,
 .writing-style,
+.sidebar-export,
 .sidebar-settings {
   display: flex;
   width: 100%;
@@ -318,6 +319,7 @@
 
 .open-document:hover,
 .writing-style:hover,
+.sidebar-export:hover,
 .sidebar-settings:hover {
   color: var(--color-text-primary);
   background: var(--color-surface-hover);
@@ -325,6 +327,7 @@
 
 .open-document .icon,
 .writing-style .icon,
+.sidebar-export .icon,
 .sidebar-settings .icon {
   width: 18px;
 }
@@ -339,7 +342,12 @@
 }
 
 .view-all-templates {
+  display: flex;
   width: 100%;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
   margin-top: 9px;
   padding: 9px 10px;
   border: 1px solid var(--color-border-default);
@@ -347,6 +355,10 @@
   background: transparent;
   color: var(--color-accent);
   font-size: 12px;
+}
+
+.view-all-templates .icon {
+  width: 18px;
 }
 
 .view-all-templates:hover {
@@ -370,11 +382,16 @@
   font-size: 18px;
 }
 
+.sidebar-export,
 .sidebar-settings {
   width: calc(100% - 28px);
   min-height: 47px;
-  margin: 4px 14px 8px;
+  margin: 4px 14px 0;
   padding: 0 14px;
+}
+
+.sidebar-settings {
+  margin-bottom: 8px;
 }
 
 .sidebar-settings:disabled {
@@ -1265,11 +1282,29 @@
   font-size: 23px;
 }
 
-.is-left-collapsed .nav-section,
+.is-left-collapsed .section-heading,
+.is-left-collapsed .document-list,
+.is-left-collapsed .writing-style-list,
 .is-left-collapsed .new-document span,
 .is-left-collapsed .new-document b,
+.is-left-collapsed .open-document span,
+.is-left-collapsed .view-all-templates span,
+.is-left-collapsed .sidebar-export span,
 .is-left-collapsed .sidebar-settings span {
   display: none;
+}
+
+.is-left-collapsed .sidebar-scroll {
+  padding-inline: 0;
+}
+
+.is-left-collapsed .nav-section {
+  padding: 0;
+  border-bottom: 0;
+}
+
+.is-left-collapsed .styles-section {
+  padding-top: 0;
 }
 
 .is-left-collapsed .brand {
@@ -1291,20 +1326,48 @@
 }
 
 .is-left-collapsed .new-document {
-  width: 42px;
-  min-height: 42px;
-  margin: 0 auto 16px;
+  width: 44px;
+  min-height: 44px;
+  margin: 0 auto 8px;
+  padding: 0;
 }
 
+.is-left-collapsed .open-document,
+.is-left-collapsed .view-all-templates {
+  width: 44px;
+  min-height: 44px;
+  justify-content: center;
+  margin: 4px auto;
+  padding: 0;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+}
+
+.is-left-collapsed .sidebar-export,
 .is-left-collapsed .sidebar-settings {
   width: 44px;
+  min-height: 44px;
   justify-content: center;
   margin-inline: auto;
   padding: 0;
 }
 
+.is-left-collapsed .open-document:active,
+.is-left-collapsed .view-all-templates:active,
+.is-left-collapsed .sidebar-export:active,
+.is-left-collapsed .sidebar-settings:active {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
 .is-left-collapsed .reveal-left {
   visibility: visible;
+}
+
+@media (max-height: 600px) {
+  .is-left-collapsed .brand {
+    min-height: 60px;
+  }
 }
 
 .app-dialog-backdrop {
@@ -1500,6 +1563,10 @@
 .about-page p,
 .about-facts { color: var(--text-muted); line-height: 1.55; }
 
+.feedback-card { margin-top: 14px; }
+.feedback-examples { font-size: 13px; }
+.feedback-email-action { width: 100%; min-height: 40px; margin-top: 8px; }
+
 .language-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 16px; }
 
 .language-options button,
@@ -1518,6 +1585,10 @@
 .about-back { margin-bottom: 18px; padding-inline: 12px; }
 .about-page h3 { font-size: 28px; }
 .about-tagline { color: var(--panel-control-accent) !important; font-family: Georgia, serif; font-style: italic; }
+.about-studio { display: flex; flex-direction: column; align-items: center; gap: 6px; margin: 12px 0 18px; text-align: center; }
+.about-studio-logo { display: block; width: 36px; height: auto; }
+.about-studio-name { margin: 0; color: var(--text-primary) !important; font-weight: 600; }
+.about-studio-link { color: var(--panel-control-accent); overflow-wrap: anywhere; }
 .about-facts { padding-left: 20px; }
 .about-links { display: grid; gap: 8px; margin-block: 18px; }
 .about-links button { padding: 9px 12px; text-align: left; }

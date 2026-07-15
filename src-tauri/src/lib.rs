@@ -27,11 +27,13 @@ fn get_app_info() -> AppInfo {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_opener::init())
         .manage(AuthorizedPaths::default())
         .setup(|app| {
             if let Some(window) = app.get_webview_window("main") {
-                let icon =
-                    tauri::image::Image::from_bytes(include_bytes!("../../assets/icon-plum3.png"))?;
+                let icon = tauri::image::Image::from_bytes(include_bytes!(
+                    "../../assets/favicon-plume3.png"
+                ))?;
                 window.set_icon(icon)?;
             }
             let storage_path = app.path().app_data_dir()?.join("recent-documents.txt");

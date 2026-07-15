@@ -1,9 +1,9 @@
-import { NARRATIVE_GENRES, WRITING_TEMPLATES, type WritingTemplate } from "./writing-templates";
-import { subscribeLocale, t } from "../i18n/i18n";
+import { NARRATIVE_GENRES, WRITING_TEMPLATES, type NarrativeGenreId, type WritingTemplate } from "./writing-templates";
+import { getLocale, subscribeLocale, t } from "../i18n/i18n";
 
 export interface TemplateSelection {
   template: WritingTemplate;
-  genre: string;
+  genre: NarrativeGenreId | "";
 }
 
 export class TemplateDialog {
@@ -22,7 +22,7 @@ export class TemplateDialog {
       button.addEventListener("click", () => this.finish(null));
     });
     this.createButton.addEventListener("click", () => {
-      if (this.selected) this.finish({ template: this.selected, genre: this.genre.value });
+      if (this.selected) this.finish({ template: this.selected, genre: this.genre.value as NarrativeGenreId | "" });
     });
     this.backdrop.addEventListener("click", (event) => {
       if (event.target === this.backdrop) this.finish(null);
@@ -42,6 +42,7 @@ export class TemplateDialog {
 
   private renderTemplates(): void {
     this.list.replaceChildren();
+    this.genre.innerHTML = renderGenreOptions();
     const categories = [...new Set(WRITING_TEMPLATES.map((template) => template.category))];
     categories.forEach((category) => {
       const group = document.createElement("section");
@@ -62,7 +63,7 @@ export class TemplateDialog {
         name.textContent = t(`templates.${template.id}.name`);
         button.append(symbol, name);
         button.addEventListener("click", () => this.select(template.id));
-        button.addEventListener("dblclick", () => this.finish({ template, genre: this.genre.value }));
+        button.addEventListener("dblclick", () => this.finish({ template, genre: this.genre.value as NarrativeGenreId | "" }));
         grid.append(button);
       });
       group.append(heading, grid);
@@ -114,5 +115,6 @@ export class TemplateDialog {
 }
 
 export function renderGenreOptions(): string {
-  return [`<option value="" data-i18n="templates.noGenre">${t("templates.noGenre")}</option>`, ...NARRATIVE_GENRES.map((genre) => `<option value="${genre}">${genre}</option>`)].join("");
+  const locale = getLocale();
+  return [`<option value="">${t("templates.noGenre")}</option>`, ...NARRATIVE_GENRES.map((genre) => `<option value="${genre.id}">${genre.label[locale]}</option>`)].join("");
 }

@@ -1,0 +1,40 @@
+import { describe, expect, it } from "vitest";
+import { icon } from "../ui/icons";
+import { renderAppShell } from "./app-shell";
+
+describe("actions de la colonne gauche", () => {
+  it("rend les cinq actions V1 dans l’ordre attendu sans bouton Projets", () => {
+    const shell = renderAppShell();
+    const selectors = [
+      'class="new-document"',
+      'class="open-document"',
+      'class="view-all-templates"',
+      'class="sidebar-export"',
+      'class="sidebar-settings"',
+    ];
+    const positions = selectors.map((selector) => shell.indexOf(selector));
+
+    expect(positions.every((position) => position >= 0)).toBe(true);
+    expect(positions).toEqual([...positions].sort((left, right) => left - right));
+    expect(shell).not.toContain("data-project");
+    expect(shell).not.toContain("search-action");
+    expect(shell).not.toContain("nav.searchDocuments");
+  });
+
+  it("fournit un aria-label et un title localisables à chaque action", () => {
+    const shell = renderAppShell();
+    ["nav.new", "nav.open", "nav.templates", "export.document", "nav.settings"].forEach((key) => {
+      expect(shell).toContain(`data-i18n-aria-label="${key}"`);
+      expect(shell).toContain(`data-i18n-title="${key}"`);
+    });
+  });
+
+  it("utilise des icônes SVG distinctes en currentColor", () => {
+    const icons = [icon("plus"), icon("folderOpen"), icon("templates"), icon("export"), icon("settings")];
+    expect(new Set(icons).size).toBe(icons.length);
+    icons.forEach((svg) => {
+      expect(svg).toContain('stroke="currentColor"');
+      expect(svg).toContain('stroke-width="1.8"');
+    });
+  });
+});
