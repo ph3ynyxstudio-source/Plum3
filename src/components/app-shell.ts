@@ -288,12 +288,12 @@ export function renderAppShell(): string {
             <p data-about-system></p><p data-about-tauri></p>
             <div class="about-links">
               <button type="button" data-about-licenses data-i18n="about.licenses">Licences open source</button>
-              <button type="button" disabled><span data-i18n="about.privacy">Politique de confidentialité</span> — <span data-i18n="common.notConfigured">Non configuré</span></button>
-              <button type="button" disabled><span data-i18n="about.support">Soutien ou contact</span> — <span data-i18n="common.notConfigured">Non configuré</span></button>
+              <button type="button" data-about-privacy data-i18n="about.privacy">Politique de confidentialité</button>
+              <button type="button" data-about-support data-i18n="about.support">Soutien ou contact</button>
             </div>
             <button class="secondary-action" data-about-copy type="button" data-i18n="about.copy">Copier les informations de version</button>
             <p class="about-copy-status" data-about-copy-status aria-live="polite"></p>
-            <p class="about-copyright">© <span data-about-year></span> Ph3yNyx</p>
+            <p class="about-copyright">© <span data-about-year></span> Ph3yNyx.Studio</p>
           </div>
         </section>
       </div>

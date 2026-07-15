@@ -5,6 +5,7 @@ import { getLocale, setLocale, subscribeLocale, t, type Locale } from "../../i18
 import type { AppDialog } from "../../ui/app-dialog";
 
 const STUDIO_URL = "https://ph3ynyx.dev/";
+const PRIVACY_URL = "https://ph3ynyx.dev/plum3/privacy/";
 const FEEDBACK_RECIPIENT = "phey.rainville@hotmail.com";
 
 export function buildFeedbackEmailUrl(version: string): string {
@@ -27,6 +28,11 @@ export function buildFeedbackEmailUrl(version: string): string {
   ].join("\r\n");
 
   return `mailto:${FEEDBACK_RECIPIENT}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
+export function buildSupportEmailUrl(version: string): string {
+  const subject = `Retour Plum3 — version ${version}`;
+  return `mailto:${FEEDBACK_RECIPIENT}?subject=${encodeURIComponent(subject)}`;
 }
 
 interface AppInfo {
@@ -57,6 +63,8 @@ export class SettingsController {
     document.querySelector<HTMLButtonElement>("[data-about-back]")?.addEventListener("click", () => this.showSettings());
     document.querySelector<HTMLButtonElement>("[data-about-copy]")?.addEventListener("click", () => void this.copyInfo());
     document.querySelector<HTMLButtonElement>("[data-about-licenses]")?.addEventListener("click", () => void this.showLicenses());
+    document.querySelector<HTMLButtonElement>("[data-about-privacy]")?.addEventListener("click", () => void this.openPrivacyPolicy());
+    document.querySelector<HTMLButtonElement>("[data-about-support]")?.addEventListener("click", () => void this.contactSupport());
     document.querySelector<HTMLButtonElement>("[data-feedback-email]")?.addEventListener("click", () => void this.sendFeedback());
     document.querySelector<HTMLAnchorElement>("[data-about-studio-url]")?.addEventListener("click", (event) => {
       event.preventDefault();
@@ -157,6 +165,24 @@ export class SettingsController {
       await openUrl(STUDIO_URL);
     } catch {
       this.copyStatus.textContent = t("about.websiteFailed");
+    }
+  }
+
+  private async openPrivacyPolicy(): Promise<void> {
+    try {
+      await openUrl(PRIVACY_URL);
+    } catch {
+      this.copyStatus.textContent = t("about.websiteFailed");
+    }
+  }
+
+  private async contactSupport(): Promise<void> {
+    try {
+      const version = this.version === "—" ? await getVersion() : this.version;
+      this.version = version;
+      await openUrl(buildSupportEmailUrl(version));
+    } catch {
+      await this.dialog.showError(t("feedback.errorTitle"), t("feedback.errorMessage"));
     }
   }
 

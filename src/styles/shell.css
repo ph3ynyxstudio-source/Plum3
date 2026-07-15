@@ -1381,6 +1381,10 @@
   backdrop-filter: blur(5px);
 }
 
+.app-dialog-backdrop[data-app-dialog] {
+  z-index: 110;
+}
+
 .app-dialog {
   width: min(430px, 100%);
   padding: 24px;
