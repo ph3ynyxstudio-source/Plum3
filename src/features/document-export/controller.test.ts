@@ -35,7 +35,7 @@ class FakeElement {
   }
 }
 
-function setup(invokeExport: ExportInvoker) {
+function setup(invokeExport: ExportInvoker, android = false) {
   const section = new FakeElement();
   const editor = new FakeElement();
   const status = new FakeElement();
@@ -68,7 +68,7 @@ function setup(invokeExport: ExportInvoker) {
   const dialog = { show, showError } as unknown as AppDialog;
   const store = new DocumentStore();
   store.restoreDraft("Brouillon.md", "# Source\n\nContenu **Markdown**.");
-  new DocumentExportController(store, dialog, invokeExport).initialize();
+  new DocumentExportController(store, dialog, invokeExport, android).initialize();
   return { docxButton, menuButton, pdfButton, show, showError, status, store };
 }
 
@@ -125,6 +125,22 @@ describe("DocumentExportController", () => {
 
     await vi.waitFor(() => expect(invokeExport).toHaveBeenCalledOnce());
     expect(context.status.textContent).toBe("Export annulé.");
+    expect(context.showError).not.toHaveBeenCalled();
+  });
+
+  it("désactive l’export Android sans invoquer la commande native", () => {
+    const invokeExport = vi.fn<ExportInvoker>();
+    const context = setup(invokeExport, true);
+
+    expect(context.pdfButton.disabled).toBe(true);
+    expect(context.docxButton.disabled).toBe(true);
+    expect(context.menuButton.disabled).toBe(true);
+    expect(context.status.textContent).toBe(
+      "L’export PDF et DOCX sera disponible dans une prochaine version Android.",
+    );
+    context.pdfButton.click();
+    context.menuButton.click();
+    expect(invokeExport).not.toHaveBeenCalled();
     expect(context.showError).not.toHaveBeenCalled();
   });
 

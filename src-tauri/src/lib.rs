@@ -30,11 +30,14 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .manage(AuthorizedPaths::default())
         .setup(|app| {
-            if let Some(window) = app.get_webview_window("main") {
-                let icon = tauri::image::Image::from_bytes(include_bytes!(
-                    "../../assets/favicon-plume3.png"
-                ))?;
-                window.set_icon(icon)?;
+            #[cfg(not(any(target_os = "android", target_os = "ios")))]
+            {
+                if let Some(window) = app.get_webview_window("main") {
+                    let icon = tauri::image::Image::from_bytes(include_bytes!(
+                        "../../assets/favicon-plume3.png"
+                    ))?;
+                    window.set_icon(icon)?;
+                }
             }
             let storage_path = app.path().app_data_dir()?.join("recent-documents.txt");
             app.manage(RecentDocuments::load(storage_path));

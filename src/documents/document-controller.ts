@@ -8,6 +8,7 @@ import { recoveredDocumentName, RecoveryDraftService } from "./recovery-draft";
 import { displayDocumentName } from "./document-name";
 import { icon } from "../ui/icons";
 import { getLocale, localeTag, subscribeLocale, t } from "../i18n/i18n";
+import { isAndroid } from "../platform/platform";
 
 export class DocumentController {
   private readonly editor = this.requireElement<HTMLTextAreaElement>("[data-document-editor]");
@@ -35,10 +36,16 @@ export class DocumentController {
     private readonly dialog: AppDialog,
     private readonly templates: TemplateDialog,
     private readonly recoveryDrafts: RecoveryDraftService,
+    private readonly android = isAndroid(),
   ) {}
 
   async initialize(): Promise<void> {
     this.bindActions();
+    if (this.android) {
+      document.querySelectorAll<HTMLButtonElement>(".save-document, .save-document-as").forEach((button) => {
+        button.disabled = true;
+      });
+    }
     const recoveryDraft = this.recoveryDrafts.load();
     if (recoveryDraft) {
       this.store.restoreDraft(
@@ -199,6 +206,7 @@ export class DocumentController {
   }
 
   private async saveCurrentDocument(): Promise<boolean> {
+    if (this.android) return this.showAndroidSaveUnavailable();
     if (this.busy) return false;
     const document = this.store.current;
     if (!document.path) return this.saveCurrentDocumentAs();
@@ -213,6 +221,7 @@ export class DocumentController {
   }
 
   private async saveCurrentDocumentAs(): Promise<boolean> {
+    if (this.android) return this.showAndroidSaveUnavailable();
     if (this.busy) return false;
     return this.runBusy(async () => {
       try {
@@ -449,6 +458,15 @@ export class DocumentController {
   private async showFileError(title: string, cause: unknown): Promise<void> {
     const message = cause instanceof Error ? cause.message : t("error.unexpected");
     await this.dialog.showError(title, message);
+  }
+
+  private async showAndroidSaveUnavailable(): Promise<false> {
+    await this.dialog.show({
+      title: t("actions.save"),
+      message: t("android.saveUnavailable"),
+      actions: [{ id: "ok", label: t("common.understood"), tone: "primary" }],
+    });
+    return false;
   }
 
   private async runBusy<T>(operation: () => Promise<T>): Promise<T> {

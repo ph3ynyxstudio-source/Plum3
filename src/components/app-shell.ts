@@ -54,7 +54,8 @@ function renderPanelPaletteOptions(theme: ThemeName): string {
 function renderToolbar(): string {
   return `
     <div class="editor-toolbar" aria-label="Outils d’écriture" data-i18n-aria-label="toolbar.label">
-      <span class="toolbar-empty" data-i18n="toolbar.placeholder">Aperçu Markdown disponible. Les outils de mise en forme seront ajoutés dans une prochaine version.</span>
+      <span class="toolbar-empty toolbar-message-desktop" data-i18n="toolbar.placeholder">Aperçu Markdown disponible. Les outils de mise en forme seront ajoutés dans une prochaine version.</span>
+      <span class="toolbar-empty toolbar-message-android" data-i18n="toolbar.androidPlaceholder">Aperçu Markdown disponible. Mise en forme avancée à venir.</span>
     </div>`;
 }
 
@@ -79,7 +80,11 @@ function renderEditor(): string {
 
 function renderRightPanel(): string {
   return `
-    <aside class="right-panel" aria-label="Réglages d’écriture" data-i18n-aria-label="writing.title">
+    <aside id="writing-settings-panel" class="right-panel" aria-label="Réglages d’écriture" data-i18n-aria-label="writing.title">
+      <header class="mobile-panel-header">
+        <h2 data-i18n="writing.title">Réglages d’écriture</h2>
+        <button class="icon-button mobile-writing-close" type="button" aria-label="Fermer" data-i18n-aria-label="common.close">${icon("chevronRight")}</button>
+      </header>
       <section class="settings-card writing-settings-card">
         <h2 data-i18n="writing.title">Réglages d’écriture</h2>
         <label class="panel-select-setting">
@@ -168,7 +173,7 @@ function renderRightPanel(): string {
 export function renderAppShell(): string {
   return `
     <div class="app-shell">
-      <aside class="left-panel" aria-label="Bibliothèque de documents" data-i18n-aria-label="nav.library">
+      <aside id="mobile-library-panel" class="left-panel" aria-label="Bibliothèque de documents" data-i18n-aria-label="nav.library">
         <div class="brand">
           <div class="brand-logos">
             <img class="brand-logo brand-logo-aube" src="/logo-aube.webp" alt="Plum3 — Dépose ton encre." />
@@ -190,20 +195,29 @@ export function renderAppShell(): string {
           </section>
         </div>
         <button class="sidebar-export" data-export-open type="button" aria-label="Exporter le document" data-i18n-aria-label="export.document" title="Exporter le document" data-i18n-title="export.document">${icon("export")}<span data-i18n="export.document">Exporter le document</span></button>
+        <div class="mobile-android-limitations" aria-live="polite">
+          <p data-i18n="android.saveUnavailable">La sauvegarde de fichiers Android sera disponible dans une prochaine version.</p>
+          <p data-i18n="android.exportUnavailable">L’export PDF et DOCX sera disponible dans une prochaine version Android.</p>
+        </div>
         <button class="sidebar-settings" data-settings-open type="button" aria-label="Paramètres" data-i18n-aria-label="nav.settings" title="Paramètres" data-i18n-title="nav.settings">${icon("settings")}<span data-i18n="nav.settings">Paramètres</span></button>
       </aside>
 
       <header class="topbar">
-        <button class="icon-button reveal-left" type="button" aria-label="Afficher le panneau gauche" data-i18n-aria-label="nav.showLeft">${icon("menu")}</button>
+        <button class="icon-button reveal-left" type="button" aria-label="Afficher le panneau gauche" data-i18n-aria-label="nav.showLeft" aria-controls="mobile-library-panel" aria-expanded="false">${icon("menu")}</button>
         <div class="document-title"><button class="document-title-button" data-document-title type="button" aria-label="Renommer le document" data-i18n-aria-label="editor.rename">Sans titre</button><input class="document-title-input" data-document-title-input aria-label="Nouveau nom du document" data-i18n-aria-label="editor.newName" maxlength="255" hidden /><span class="saved-dot is-unsaved" data-document-save-dot></span><small data-document-status>Nouveau document</small></div>
         <div class="topbar-actions">
           <div class="theme-switcher" aria-label="Choisir le thème" data-i18n-aria-label="theme.choose">
             <button type="button" data-theme-option="aube" aria-pressed="false">${icon("sun")}<span data-i18n="theme.dawn">Aube</span></button>
             <button type="button" data-theme-option="nuit" aria-pressed="false">${icon("moon")}<span data-i18n="theme.night">Nuit</span></button>
           </div>
+          <button class="mobile-theme-toggle" type="button" aria-label="Choisir le thème" data-i18n-aria-label="theme.choose">
+            <span class="mobile-theme-aube">${icon("sun")}<span data-i18n="theme.dawn">Aube</span></span>
+            <span class="mobile-theme-nuit">${icon("moon")}<span data-i18n="theme.night">Nuit</span></span>
+          </button>
           <button class="icon-button document-action save-document" data-document-action="save" type="button" aria-label="Enregistrer" data-i18n-aria-label="actions.save" title="Enregistrer (Ctrl+S)" data-i18n-title="actions.saveShortcut">${icon("save")}</button>
           <button class="icon-button document-action save-document-as" data-document-action="save-as" type="button" aria-label="Enregistrer sous" data-i18n-aria-label="actions.saveAs" title="Enregistrer sous… (Ctrl+Maj+S)" data-i18n-title="actions.saveAsShortcut">${icon("saveAs")}</button>
           <button class="icon-button collapse-right" type="button" aria-label="Fermer la colonne de personnalisation" data-i18n-aria-label="actions.closeRight" aria-expanded="true">${icon("menu")}</button>
+          <button class="icon-button mobile-writing-toggle" type="button" aria-label="Réglages d’écriture" data-i18n-aria-label="writing.title" aria-controls="writing-settings-panel" aria-expanded="false">${icon("edit")}</button>
         </div>
       </header>
 
@@ -225,6 +239,7 @@ export function renderAppShell(): string {
           <i class="saved-dot is-unsaved" data-document-save-dot></i>
         </div>
       </footer>
+      <button class="mobile-panel-scrim" type="button" aria-label="Fermer" data-i18n-aria-label="common.close" hidden></button>
       <div class="app-dialog-backdrop" data-app-dialog hidden>
         <section class="app-dialog" role="dialog" aria-modal="true" aria-labelledby="app-dialog-title" aria-describedby="app-dialog-message">
           <h2 id="app-dialog-title" data-dialog-title></h2>

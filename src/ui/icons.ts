@@ -5,6 +5,7 @@ export type IconName =
   | "chevronRight"
   | "code"
   | "document"
+  | "edit"
   | "export"
   | "folder"
   | "folderOpen"
@@ -31,6 +32,7 @@ const paths: Record<IconName, string> = {
   chevronRight: '<path d="m9 18 6-6-6-6"/>',
   code: '<path d="m8 9-4 3 4 3M16 9l4 3-4 3M14 5l-4 14"/>',
   document: '<path d="M6 2h8l4 4v16H6z"/><path d="M14 2v5h5M9 13h6M9 17h4"/>',
+  edit: '<path d="m5 19 1-4L16 5l3 3L9 18l-4 1Z"/><path d="m14 7 3 3"/>',
   export: '<path d="M5 2h8l4 4v5M13 2v5h5M5 2v20h8"/><path d="M12 16h9M17 12l4 4-4 4"/>',
   folder: '<path d="M3 6h7l2 2h9v11H3z"/>',
   folderOpen: '<path d="M3 8V5h7l2 2h7v3"/><path d="M3 10h18l-2 9H5z"/>',

@@ -37,4 +37,19 @@ describe("actions de la colonne gauche", () => {
       expect(svg).toContain('stroke-width="1.8"');
     });
   });
+
+  it("expose les deux panneaux mobiles sans dupliquer leur contenu", () => {
+    const shell = renderAppShell();
+    expect(shell).toContain('id="mobile-library-panel"');
+    expect(shell).toContain('aria-controls="mobile-library-panel"');
+    expect(shell).toContain('id="writing-settings-panel"');
+    expect(shell).toContain('class="icon-button mobile-writing-toggle"');
+    expect(shell).toContain('class="mobile-theme-toggle"');
+    expect(shell).toContain('data-i18n="android.saveUnavailable"');
+    expect(shell).toContain('data-i18n="android.exportUnavailable"');
+    expect(shell).toContain(icon("edit"));
+    expect(shell).toContain('class="icon-button mobile-writing-close"');
+    expect(shell).toContain('class="mobile-panel-scrim"');
+    expect(shell.match(/data-i18n="writing.title"/g)?.length).toBe(2);
+  });
 });

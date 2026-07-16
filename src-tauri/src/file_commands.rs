@@ -1,4 +1,5 @@
 use crate::recent_documents::{RecentDocument, RecentDocuments};
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
 use rfd::FileDialog;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -237,6 +238,7 @@ fn read_document(path: &Path) -> Result<LoadedDocument, FileCommandError> {
     })
 }
 
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
 #[tauri::command]
 pub fn choose_document_to_open(
     locale: String,
@@ -269,6 +271,19 @@ pub fn choose_document_to_open(
     let document = read_document(&path)?;
     recent_documents.record(&path);
     Ok(Some(document))
+}
+
+#[cfg(any(target_os = "android", target_os = "ios"))]
+#[tauri::command]
+pub fn choose_document_to_open(
+    _locale: String,
+    _authorized_paths: tauri::State<'_, AuthorizedPaths>,
+    _recent_documents: tauri::State<'_, RecentDocuments>,
+) -> Result<Option<LoadedDocument>, FileCommandError> {
+    Err(error(
+        "mobile_file_dialog_unavailable",
+        "L’ouverture de documents mobiles sera ajoutée lors de la prochaine phase Android.",
+    ))
 }
 
 #[tauri::command]
@@ -306,6 +321,7 @@ pub fn open_recent_document(
     Ok(document)
 }
 
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
 #[tauri::command]
 pub fn choose_document_save_path(
     suggested_name: String,
@@ -336,6 +352,19 @@ pub fn choose_document_save_path(
         name: file_name(&path),
         exists: path.exists(),
     }))
+}
+
+#[cfg(any(target_os = "android", target_os = "ios"))]
+#[tauri::command]
+pub fn choose_document_save_path(
+    _suggested_name: String,
+    _locale: String,
+    _authorized_paths: tauri::State<'_, AuthorizedPaths>,
+) -> Result<Option<SaveTarget>, FileCommandError> {
+    Err(error(
+        "mobile_file_dialog_unavailable",
+        "L’enregistrement vers un document mobile sera ajouté lors de la prochaine phase Android.",
+    ))
 }
 
 #[tauri::command]

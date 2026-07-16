@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import type { DocumentStore } from "../../documents/document-state";
 import { AppDialog } from "../../ui/app-dialog";
 import { getLocale, t } from "../../i18n/i18n";
+import { isAndroid } from "../../platform/platform";
 
 type ExportFormat = "pdf" | "docx";
 type ExportFontKind = "serif" | "sans" | "mono";
@@ -69,9 +70,16 @@ export class DocumentExportController {
     private readonly store: DocumentStore,
     private readonly dialog: AppDialog,
     private readonly invokeDocumentExport: ExportInvoker = invokeExport,
+    private readonly android = isAndroid(),
   ) {}
 
   initialize(): void {
+    if (this.android) {
+      this.buttons.forEach((button) => { button.disabled = true; });
+      this.menuButton.disabled = true;
+      this.status.textContent = t("android.exportUnavailable");
+      return;
+    }
     this.buttons.forEach((button) => {
       button.addEventListener("click", () => {
         void this.export(button.dataset.exportFormat as ExportFormat);

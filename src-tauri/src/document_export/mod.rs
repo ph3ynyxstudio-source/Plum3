@@ -1,7 +1,9 @@
 mod docx_export;
 mod markdown_model;
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
 mod pdf_export;
 
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
 use rfd::FileDialog;
 use serde::{Deserialize, Serialize};
 use std::{fs, path::PathBuf};
@@ -100,6 +102,7 @@ fn export_error(code: &str, message: impl Into<String>) -> ExportError {
     }
 }
 
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
 #[tauri::command]
 pub fn export_document(request: ExportRequest) -> Result<Option<ExportResult>, ExportError> {
     let suggested_name = suggested_export_name(&request.source_name, request.format);
@@ -131,6 +134,15 @@ pub fn export_document(request: ExportRequest) -> Result<Option<ExportResult>, E
             .to_string(),
         path: path.to_string_lossy().into_owned(),
     }))
+}
+
+#[cfg(any(target_os = "android", target_os = "ios"))]
+#[tauri::command]
+pub fn export_document(_request: ExportRequest) -> Result<Option<ExportResult>, ExportError> {
+    Err(export_error(
+        "mobile_file_dialog_unavailable",
+        "L’export vers un document mobile sera ajouté lors de la prochaine phase Android.",
+    ))
 }
 
 fn suggested_export_name(source_name: &str, format: ExportFormat) -> String {
