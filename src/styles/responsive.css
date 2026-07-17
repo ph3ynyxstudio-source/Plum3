@@ -542,8 +542,12 @@
   :root[data-platform="android"] .is-focus-mode .focus-card {
     top: calc(env(safe-area-inset-top, 0px) + 8px);
     right: 8px;
-    width: auto;
-    height: 48px;
+    width: 44px;
+    height: 44px;
+  }
+
+  :root[data-platform="android"] .is-focus-mode .workspace {
+    margin-top: calc(env(safe-area-inset-top, 0px) + 60px);
   }
 
   :root[data-platform="android"] .is-focus-mode .right-panel,
@@ -559,10 +563,23 @@
   }
 
   :root[data-platform="android"] .is-focus-mode .focus-mode-toggle {
-    min-width: 116px;
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
     min-height: 44px;
-    padding-inline: 14px;
-    font-size: 13px;
+    padding: 0;
+    font-size: 0;
+  }
+
+  :root[data-platform="android"] .is-focus-mode .focus-mode-toggle .icon,
+  :root[data-platform="android"] .is-focus-mode .focus-mode-toggle [data-focus-mode-label] {
+    display: none;
+  }
+
+  :root[data-platform="android"] .is-focus-mode .focus-mode-toggle::after {
+    font-size: 22px;
+    line-height: 1;
+    content: "×";
   }
 }
 
