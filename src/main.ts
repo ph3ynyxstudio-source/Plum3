@@ -35,8 +35,16 @@ app.innerHTML = renderAppShell();
 translateDocument(app);
 
 if (android) {
-  document.querySelectorAll<HTMLButtonElement>(".open-document, .save-document, .save-document-as, [data-export-open], [data-export-format]")
+  document.querySelectorAll<HTMLButtonElement>(".open-document, .save-document-as, [data-export-open], [data-export-format]")
     .forEach((button) => { button.disabled = true; });
+  const saveButton = document.querySelector<HTMLButtonElement>(".save-document");
+  if (saveButton) {
+    saveButton.disabled = false;
+    saveButton.dataset.i18nAriaLabel = "library.save";
+    saveButton.dataset.i18nTitle = "library.save";
+    saveButton.setAttribute("aria-label", t("library.save"));
+    saveButton.title = t("library.save");
+  }
   const exportStatus = document.querySelector<HTMLElement>("[data-export-status]");
   if (exportStatus) {
     exportStatus.dataset.i18n = "android.exportUnavailable";
@@ -65,6 +73,7 @@ const documentStore = new DocumentStore();
 const fileService = new FileService();
 const recoveryDrafts = new RecoveryDraftService();
 const androidLibraryAutosave = new AndroidLibraryAutosaveController(documentStore);
+const markdownShare = new MarkdownShareController(documentStore, appDialog);
 const documentController = new DocumentController(
   documentStore,
   fileService,
@@ -80,13 +89,14 @@ const mobileLibrary = new MobileLibraryController(
   documentStore,
   androidLibraryAutosave,
   appDialog,
+  markdownShare,
 );
 void (async () => {
   await new RecoveryDraftMigrationController(recoveryDrafts).initialize();
   await androidLibraryAutosave.initialize();
   await mobileLibrary.initialize();
 })();
-new DocumentRenameController(documentStore, fileService, appDialog).initialize();
+new DocumentRenameController(documentStore, fileService, appDialog, android).initialize();
 
 const writingPreferences = new WritingPreferencesController(
   new WritingPreferencesStorage(),
@@ -95,7 +105,7 @@ const writingPreferences = new WritingPreferencesController(
 writingPreferences.initialize();
 new DisplayPreferencesController(new DisplayPreferencesStorage(), documentStore).initialize();
 new DocumentExportController(documentStore, appDialog).initialize();
-new MarkdownShareController(documentStore, appDialog).initialize();
+markdownShare.initialize();
 
 function initializeResponsiveLayout(): void {
   const shell = document.querySelector<HTMLElement>(".app-shell");

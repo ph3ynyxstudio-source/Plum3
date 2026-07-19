@@ -42,6 +42,7 @@ export class AndroidLibraryAutosaveController {
   private queue: Promise<boolean> = Promise.resolve(true);
   private previous: SaveSnapshot | null = null;
   private initialized = false;
+  private applyingSavedState = false;
   private readonly status: HTMLElement | null;
 
   constructor(
@@ -87,8 +88,19 @@ export class AndroidLibraryAutosaveController {
     return this.queue;
   }
 
+  async saveNow(): Promise<boolean> {
+    if (!this.android) return false;
+    this.cancelTimer();
+    this.enqueue(this.snapshot(this.store.current), true);
+    return this.queue;
+  }
+
   private handleState(state: Readonly<DocumentState>): void {
     const current = this.snapshot(state);
+    if (this.applyingSavedState) {
+      this.previous = current;
+      return;
+    }
     if (
       this.previous &&
       this.previous.libraryDocumentId !== current.libraryDocumentId &&
@@ -109,19 +121,22 @@ export class AndroidLibraryAutosaveController {
     }, DELAY_MS);
   }
 
-  private enqueue(snapshot: SaveSnapshot): void {
+  private enqueue(snapshot: SaveSnapshot, force = false): void {
     this.queue = this.queue
-      .then(() => this.persist(snapshot))
+      .then(() => this.persist(snapshot, force))
       .catch(() => false);
   }
 
-  private async persist(snapshot: SaveSnapshot): Promise<boolean> {
-    if (snapshot.content === snapshot.savedContent) return true;
+  private async persist(snapshot: SaveSnapshot, force = false): Promise<boolean> {
+    if (!force && snapshot.content === snapshot.savedContent) return true;
     this.setStatus("autosave.saving");
     try {
-      const document = snapshot.libraryDocumentId
+      const currentBeforeSave = this.store.current;
+      const resolvedDocumentId = snapshot.libraryDocumentId
+        ?? (currentBeforeSave.name === snapshot.name ? currentBeforeSave.libraryDocumentId : null);
+      const document = resolvedDocumentId
         ? await this.gateway.save({
-            documentId: snapshot.libraryDocumentId,
+            documentId: resolvedDocumentId,
             content: snapshot.content,
           })
         : await this.gateway.create({
@@ -130,11 +145,16 @@ export class AndroidLibraryAutosaveController {
             templateType: null,
           });
       const current = this.store.current;
-      const sameDocument = snapshot.libraryDocumentId
-        ? current.libraryDocumentId === snapshot.libraryDocumentId
+      const sameDocument = resolvedDocumentId
+        ? current.libraryDocumentId === resolvedDocumentId
         : current.libraryDocumentId === null && current.name === snapshot.name;
       if (sameDocument) {
-        this.store.markLibrarySaved(document, snapshot.content);
+        this.applyingSavedState = true;
+        try {
+          this.store.markLibrarySaved(document, snapshot.content);
+        } finally {
+          this.applyingSavedState = false;
+        }
         if (!this.store.isDirty) this.setStatus("autosave.saved");
       }
       return true;

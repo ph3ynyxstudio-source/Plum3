@@ -12,6 +12,7 @@ import { isAndroid } from "../platform/platform";
 
 export interface AndroidDocumentAutosave {
   flush(): Promise<boolean>;
+  saveNow(): Promise<boolean>;
 }
 
 export class DocumentController {
@@ -47,7 +48,7 @@ export class DocumentController {
   async initialize(): Promise<void> {
     this.bindActions();
     if (this.android) {
-      document.querySelectorAll<HTMLButtonElement>(".open-document, .save-document, .save-document-as").forEach((button) => {
+      document.querySelectorAll<HTMLButtonElement>(".open-document, .save-document-as").forEach((button) => {
         button.disabled = true;
       });
       this.recentDocuments.replaceChildren();
@@ -238,7 +239,17 @@ export class DocumentController {
   }
 
   private async saveCurrentDocument(): Promise<boolean> {
-    if (this.android) return this.showAndroidSaveUnavailable();
+    if (this.android) {
+      if (this.busy) return false;
+      if (!this.androidAutosave) return this.showAndroidSaveUnavailable();
+      return this.runBusy(async () => {
+        const saved = await this.androidAutosave!.saveNow();
+        if (!saved) {
+          await this.dialog.showError(t("error.saveFailed"), t("library.saveFailed"));
+        }
+        return saved;
+      });
+    }
     if (this.busy) return false;
     const document = this.store.current;
     if (!document.path) return this.saveCurrentDocumentAs();
@@ -514,7 +525,9 @@ export class DocumentController {
   private setBusy(busy: boolean): void {
     this.busy = busy;
     this.actionButtons.forEach((button) => {
-      button.disabled = busy;
+      const unavailableOnAndroid = this.android
+        && (button.dataset.documentAction === "open" || button.dataset.documentAction === "save-as");
+      button.disabled = busy || unavailableOnAndroid;
     });
     this.recentDocuments.querySelectorAll<HTMLButtonElement>("button").forEach((button) => {
       button.disabled = busy;

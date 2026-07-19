@@ -3,8 +3,9 @@ mod models;
 mod repository;
 
 pub use commands::{
-    create_library_document, list_library_documents, load_active_library_document,
-    migrate_recovery_draft, open_library_document, save_library_document,
+    create_library_document, delete_library_document, list_library_documents,
+    load_active_library_document, migrate_recovery_draft, open_library_document,
+    read_library_document, rename_library_document, save_library_document,
     verify_recovery_draft_migration,
 };
 pub use models::{

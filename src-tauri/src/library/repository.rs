@@ -18,6 +18,7 @@ const DOCUMENTS_DIRECTORY: &str = "documents";
 const INDEX_FILE: &str = "index.json";
 const RECOVERY_DRAFT_MIGRATION_FILE: &str = "recovery-draft-v1-migration.json";
 const RECOVERED_DRAFT_TITLE: &str = "Brouillon récupéré";
+const DELETED_SUFFIX: &str = ".deleted";
 
 pub struct CreateLibraryDocument {
     pub title: String,
@@ -315,6 +316,71 @@ impl LibraryRepository {
             .expect("le document sauvegardé demeure dans l’index"))
     }
 
+    pub fn rename_document(&self, id: &str, title: &str) -> Result<LibraryDocument, LibraryError> {
+        let _guard = self.access.lock().map_err(|error| {
+            LibraryError::InvalidIndex(format!("verrou de stockage indisponible : {error}"))
+        })?;
+        validate_document_id(id)?;
+        let title = title.trim();
+        if title.is_empty() {
+            return Err(LibraryError::InvalidDocumentTitle);
+        }
+        let mut index = self.load_or_create_index()?;
+        let position = index
+            .documents
+            .iter()
+            .position(|document| document.id == id)
+            .ok_or_else(|| LibraryError::DocumentNotFound(id.to_string()))?;
+        index.documents[position].title = title.to_string();
+        index.documents[position].updated_at = self.clock.now();
+        let document = index.documents[position].clone();
+        sort_documents(&mut index.documents);
+        self.write_index(&index)?;
+        Ok(document)
+    }
+
+    pub fn delete_document(&self, id: &str) -> Result<(), LibraryError> {
+        let _guard = self.access.lock().map_err(|error| {
+            LibraryError::InvalidIndex(format!("verrou de stockage indisponible : {error}"))
+        })?;
+        validate_document_id(id)?;
+        let mut index = self.load_or_create_index()?;
+        let position = index
+            .documents
+            .iter()
+            .position(|document| document.id == id)
+            .ok_or_else(|| LibraryError::DocumentNotFound(id.to_string()))?;
+        let document = index.documents[position].clone();
+        let path = self.document_path(&document);
+        let deleted = sibling_with_suffix(&path, DELETED_SUFFIX);
+        if deleted.exists() {
+            fs::remove_file(&deleted).map_err(|error| {
+                io_error("nettoyage du marqueur de suppression", &deleted, error)
+            })?;
+        }
+        fs::rename(&path, &deleted)
+            .map_err(|error| io_error("préparation de la suppression", &path, error))?;
+
+        index.documents.remove(position);
+        if index.active_document_id.as_deref() == Some(id) {
+            index.active_document_id = None;
+        }
+        if index
+            .migrations
+            .recovery_draft_v1
+            .as_ref()
+            .is_some_and(|migration| migration.document_id == id)
+        {
+            index.migrations.recovery_draft_v1 = None;
+        }
+        if let Err(error) = self.write_index(&index) {
+            let _ = fs::rename(&deleted, &path);
+            return Err(error);
+        }
+        fs::remove_file(&deleted)
+            .map_err(|error| io_error("suppression du document", &deleted, error))
+    }
+
     pub fn migrate_recovery_draft(
         &self,
         request: RecoveryDraftMigrationRequest,
@@ -527,6 +593,7 @@ impl LibraryRepository {
             .map_err(|error| io_error("lecture de l’index", &self.index_path, error))?;
         let mut index: LibraryIndex = serde_json::from_slice(&bytes)
             .map_err(|error| LibraryError::InvalidIndex(error.to_string()))?;
+        self.recover_deletions(&index)?;
         if self.recovery_draft_migration_path.exists() {
             let journal_bytes = fs::read(&self.recovery_draft_migration_path).map_err(|error| {
                 io_error(
@@ -542,6 +609,47 @@ impl LibraryRepository {
         }
         self.validate_index(&index)?;
         Ok(index)
+    }
+
+    fn recover_deletions(&self, index: &LibraryIndex) -> Result<(), LibraryError> {
+        for entry in fs::read_dir(&self.documents_directory).map_err(|error| {
+            io_error(
+                "lecture des suppressions interrompues",
+                &self.documents_directory,
+                error,
+            )
+        })? {
+            let path = entry
+                .map_err(|error| {
+                    io_error(
+                        "lecture d’une suppression interrompue",
+                        &self.documents_directory,
+                        error,
+                    )
+                })?
+                .path();
+            let name = path
+                .file_name()
+                .and_then(|name| name.to_str())
+                .unwrap_or_default();
+            let Some(original_name) = name.strip_suffix(DELETED_SUFFIX) else {
+                continue;
+            };
+            let original = self.documents_directory.join(original_name);
+            let remains_indexed = index
+                .documents
+                .iter()
+                .any(|document| document.file_name == original_name);
+            if remains_indexed {
+                fs::rename(&path, &original)
+                    .map_err(|error| io_error("restauration du document supprimé", &path, error))?;
+            } else {
+                fs::remove_file(&path).map_err(|error| {
+                    io_error("finalisation de la suppression du document", &path, error)
+                })?;
+            }
+        }
+        Ok(())
     }
 
     fn write_index(&self, index: &LibraryIndex) -> Result<(), LibraryError> {
@@ -1481,6 +1589,120 @@ mod tests {
             .list_documents()
             .expect("bibliothèque lisible")
             .is_empty());
+    }
+
+    #[test]
+    fn lit_un_document_sans_changer_le_document_actif() {
+        let root = TestDirectory::new("read-without-opening");
+        let repository = repository(
+            &root.0,
+            &[FIRST_ID, SECOND_ID],
+            &["2026-07-17T18:00:00.000Z", "2026-07-17T18:01:00.000Z"],
+        );
+        let first = repository
+            .create_document(request("Premier.md", "alpha"))
+            .expect("premier créé");
+        let second = repository
+            .create_document(request("Second.md", "beta"))
+            .expect("second créé");
+
+        let read = repository
+            .read_document(&first.id)
+            .expect("premier lu sans ouverture");
+        let index = repository.initialize().expect("index relu");
+
+        assert_eq!(read.content, "alpha");
+        assert_eq!(
+            index.active_document_id.as_deref(),
+            Some(second.id.as_str())
+        );
+        assert_eq!(read.document.last_opened_at, None);
+    }
+
+    #[test]
+    fn renomme_uniquement_les_metadonnees_et_met_a_jour_updated_at() {
+        let root = TestDirectory::new("rename-document");
+        let repository = repository(
+            &root.0,
+            &[FIRST_ID],
+            &["2026-07-17T18:00:00.000Z", "2026-07-17T18:05:00.000Z"],
+        );
+        let created = repository
+            .create_document(request("Avant.md", "contenu intact"))
+            .expect("document créé");
+        let path = repository.documents_directory().join(&created.file_name);
+
+        let renamed = repository
+            .rename_document(&created.id, " Après.md ")
+            .expect("document renommé");
+
+        assert_eq!(renamed.id, created.id);
+        assert_eq!(renamed.file_name, created.file_name);
+        assert_eq!(renamed.title, "Après.md");
+        assert_eq!(renamed.updated_at, "2026-07-17T18:05:00.000Z");
+        assert_eq!(
+            fs::read_to_string(path).expect("contenu relu"),
+            "contenu intact"
+        );
+    }
+
+    #[test]
+    fn supprime_le_document_actif_sans_toucher_aux_autres_documents() {
+        let root = TestDirectory::new("delete-active-document");
+        let repository = repository(
+            &root.0,
+            &[FIRST_ID, SECOND_ID],
+            &["2026-07-17T18:00:00.000Z", "2026-07-17T18:01:00.000Z"],
+        );
+        let first = repository
+            .create_document(request("Premier.md", "alpha"))
+            .expect("premier créé");
+        let second = repository
+            .create_document(request("Second.md", "beta"))
+            .expect("second créé");
+        let second_path = repository.documents_directory().join(&second.file_name);
+
+        repository
+            .delete_document(&second.id)
+            .expect("document actif supprimé");
+        let index = repository.initialize().expect("index relu");
+
+        assert_eq!(index.active_document_id, None);
+        assert_eq!(index.documents, vec![first.clone()]);
+        assert!(!second_path.exists());
+        assert_eq!(
+            repository
+                .read_document(&first.id)
+                .expect("premier conservé")
+                .content,
+            "alpha"
+        );
+    }
+
+    #[test]
+    fn restaure_une_suppression_interrompue_si_l_index_reference_encore_le_document() {
+        let root = TestDirectory::new("recover-interrupted-delete");
+        let repository = repository(&root.0, &[FIRST_ID], &["2026-07-17T18:00:00.000Z"]);
+        let document = repository
+            .create_document(request("À restaurer.md", "contenu sûr"))
+            .expect("document créé");
+        let path = repository.documents_directory().join(&document.file_name);
+        let deleted = sibling_with_suffix(&path, DELETED_SUFFIX);
+        fs::rename(&path, &deleted).expect("suppression interrompue simulée");
+        drop(repository);
+
+        let reopened = LibraryRepository::new(&root.0);
+        reopened.initialize().expect("suppression récupérée");
+
+        assert!(path.exists());
+        assert!(!deleted.exists());
+        assert_eq!(
+            reopened
+                .read_document(&document.id)
+                .expect("document restauré")
+                .content,
+            "contenu sûr"
+        );
     }
 
     #[test]

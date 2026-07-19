@@ -127,6 +127,47 @@ describe("AndroidLibraryAutosaveController", () => {
     expect(store.isDirty).toBe(true);
   });
 
+  it("crée manuellement un document vide encore absent de la bibliothèque", async () => {
+    const { controller, gateway, store } = setup();
+    await controller.initialize();
+
+    await expect(controller.saveNow()).resolves.toBe(true);
+
+    expect(gateway.create).toHaveBeenCalledWith({
+      title: "Sans titre.md",
+      content: "",
+      templateType: null,
+    });
+    expect(store.current.libraryDocumentId).toBe(documentMeta.id);
+  });
+
+  it("sauvegarde manuellement un document existant même sans modification", async () => {
+    const { controller, gateway } = setup("stable");
+    await controller.initialize();
+
+    await expect(controller.saveNow()).resolves.toBe(true);
+
+    expect(gateway.save).toHaveBeenCalledWith({
+      documentId: documentMeta.id,
+      content: "stable",
+    });
+  });
+
+  it("ne crée pas de doublon si une sauvegarde automatique précède la sauvegarde manuelle", async () => {
+    const { controller, gateway, store } = setup();
+    await controller.initialize();
+    store.createFromTemplate("Unique.md", "contenu");
+    await vi.advanceTimersByTimeAsync(2_000);
+
+    await controller.saveNow();
+
+    expect(gateway.create).toHaveBeenCalledTimes(1);
+    expect(gateway.save).toHaveBeenCalledWith({
+      documentId: documentMeta.id,
+      content: "contenu",
+    });
+  });
+
   it("reste entièrement inactif sur Windows", async () => {
     const { controller, gateway, store } = setup(null, false);
     await controller.initialize();

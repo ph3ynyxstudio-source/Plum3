@@ -4,13 +4,27 @@ import { AppDialog } from "../ui/app-dialog";
 import { displayDocumentName, DocumentNameError, validatedDocumentName } from "./document-name";
 import { DocumentStore } from "./document-state";
 import { subscribeLocale, t } from "../i18n/i18n";
+import { invoke } from "@tauri-apps/api/core";
+import type { LibraryDocument } from "./recovery-draft-migration";
+import { isAndroid } from "../platform/platform";
+
+export type LibraryRenameInvoker = (documentId: string, title: string) => Promise<LibraryDocument>;
+
+const invokeLibraryRename: LibraryRenameInvoker = (documentId, title) =>
+  invoke("rename_library_document", { request: { documentId, title } });
 
 export class DocumentRenameController {
   private readonly display = this.requireElement<HTMLButtonElement>("[data-document-title]");
   private readonly input = this.requireElement<HTMLInputElement>("[data-document-title-input]");
   private editing = false;
 
-  constructor(private readonly store: DocumentStore, private readonly files: FileService, private readonly dialog: AppDialog) {}
+  constructor(
+    private readonly store: DocumentStore,
+    private readonly files: FileService,
+    private readonly dialog: AppDialog,
+    private readonly android = isAndroid(),
+    private readonly renameLibrary: LibraryRenameInvoker = invokeLibraryRename,
+  ) {}
 
   initialize(): void {
     this.display.addEventListener("click", () => this.start());
@@ -59,6 +73,21 @@ export class DocumentRenameController {
       return;
     }
     if (name === previous.name) { this.cancel(); return; }
+
+    if (this.android && previous.libraryDocumentId) {
+      try {
+        this.store.markLibraryRenamed(await this.renameLibrary(previous.libraryDocumentId, name));
+        document.dispatchEvent(new CustomEvent("plum3:library-updated"));
+        this.cancel();
+      } catch (cause) {
+        this.input.focus();
+        await this.dialog.showError(
+          t("rename.failedTitle"),
+          cause instanceof Error ? cause.message : t("library.renameFailed"),
+        );
+      }
+      return;
+    }
 
     if (!previous.path) {
       this.store.renameProposed(name);

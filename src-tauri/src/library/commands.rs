@@ -26,6 +26,19 @@ pub struct OpenLibraryDocumentRequest {
     document_id: String,
 }
 
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RenameLibraryDocumentRequest {
+    document_id: String,
+    title: String,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LibraryDocumentRequest {
+    document_id: String,
+}
+
 #[tauri::command]
 pub fn migrate_recovery_draft(
     request: RecoveryDraftMigrationRequest,
@@ -95,5 +108,35 @@ pub fn open_library_document(
 ) -> Result<LibraryDocumentContent, String> {
     repository
         .open_document(&request.document_id)
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub fn read_library_document(
+    request: LibraryDocumentRequest,
+    repository: tauri::State<'_, LibraryRepository>,
+) -> Result<LibraryDocumentContent, String> {
+    repository
+        .read_document(&request.document_id)
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub fn rename_library_document(
+    request: RenameLibraryDocumentRequest,
+    repository: tauri::State<'_, LibraryRepository>,
+) -> Result<LibraryDocument, String> {
+    repository
+        .rename_document(&request.document_id, &request.title)
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub fn delete_library_document(
+    request: LibraryDocumentRequest,
+    repository: tauri::State<'_, LibraryRepository>,
+) -> Result<(), String> {
+    repository
+        .delete_document(&request.document_id)
         .map_err(|error| error.to_string())
 }

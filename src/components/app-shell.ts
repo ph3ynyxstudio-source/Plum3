@@ -284,6 +284,7 @@ export function renderAppShell(): string {
         <section class="app-dialog" role="dialog" aria-modal="true" aria-labelledby="app-dialog-title" aria-describedby="app-dialog-message">
           <h2 id="app-dialog-title" data-dialog-title></h2>
           <p id="app-dialog-message" data-dialog-message></p>
+          <label class="dialog-input-field" data-dialog-input-field hidden><span data-dialog-input-label></span><input data-dialog-input type="text" autocomplete="off" /></label>
           <div class="dialog-actions" data-dialog-actions></div>
         </section>
       </div>

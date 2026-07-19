@@ -449,11 +449,10 @@
     display: flex;
     grid-column: 3;
     grid-row: 1;
-    gap: 4px;
+    gap: 8px;
   }
 
   :root[data-platform="android"] .theme-switcher,
-  :root[data-platform="android"] .save-document,
   :root[data-platform="android"] .save-document-as,
   :root[data-platform="android"] .collapse-right {
     display: none;
@@ -486,6 +485,7 @@
   }
 
   :root[data-platform="android"] .app-shell.is-library-view .document-title,
+  :root[data-platform="android"] .app-shell.is-library-view .save-document,
   :root[data-platform="android"] .app-shell.is-library-view .mobile-writing-toggle {
     visibility: hidden;
   }

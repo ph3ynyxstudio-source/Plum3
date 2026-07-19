@@ -12,8 +12,9 @@ use file_commands::{
 };
 #[cfg(target_os = "android")]
 use library::{
-    create_library_document, list_library_documents, load_active_library_document,
-    migrate_recovery_draft, open_library_document, save_library_document,
+    create_library_document, delete_library_document, list_library_documents,
+    load_active_library_document, migrate_recovery_draft, open_library_document,
+    read_library_document, rename_library_document, save_library_document,
     verify_recovery_draft_migration, LibraryRepository,
 };
 #[cfg(target_os = "android")]
@@ -88,6 +89,12 @@ pub fn run() {
             list_library_documents,
             #[cfg(target_os = "android")]
             open_library_document,
+            #[cfg(target_os = "android")]
+            read_library_document,
+            #[cfg(target_os = "android")]
+            rename_library_document,
+            #[cfg(target_os = "android")]
+            delete_library_document,
             get_app_info
         ])
         .run(tauri::generate_context!())

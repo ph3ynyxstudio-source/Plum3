@@ -68,6 +68,9 @@ function setup(android: boolean) {
   const openButton = new FakeElement();
   const saveButton = new FakeElement();
   const saveAsButton = new FakeElement();
+  openButton.dataset.documentAction = "open";
+  saveButton.dataset.documentAction = "save";
+  saveAsButton.dataset.documentAction = "save-as";
   const documentListeners = new Map<string, Listener[]>();
   const elements = new Map<string, FakeElement>([
     ["[data-document-editor]", editor],
@@ -88,9 +91,10 @@ function setup(android: boolean) {
     createElement: () => new FakeElement(),
     querySelector: (selector: string) => elements.get(selector) ?? null,
     querySelectorAll: (selector: string) => {
-      if (selector === ".open-document, .save-document, .save-document-as") {
+      if (selector === "[data-document-action]") {
         return [openButton, saveButton, saveAsButton];
       }
+      if (selector === ".open-document, .save-document-as") return [openButton, saveAsButton];
       return [];
     },
     addEventListener: (type: string, listener: Listener) => {
@@ -117,6 +121,10 @@ function setup(android: boolean) {
     save: vi.fn(),
   };
   const store = new DocumentStore();
+  const androidAutosave = {
+    flush: vi.fn().mockResolvedValue(true),
+    saveNow: vi.fn().mockResolvedValue(true),
+  };
   const controller = new DocumentController(
     store,
     files as unknown as FileService,
@@ -124,6 +132,7 @@ function setup(android: boolean) {
     templates as unknown as TemplateDialog,
     recoveryDrafts as unknown as RecoveryDraftService,
     android,
+    androidAutosave,
   );
   (controller as unknown as { bindActions(): void }).bindActions();
   return {
@@ -132,6 +141,9 @@ function setup(android: boolean) {
     documentListeners,
     files,
     openButton,
+    saveButton,
+    saveAsButton,
+    androidAutosave,
     recoveryDrafts,
     store,
   };
@@ -182,6 +194,18 @@ describe("DocumentController et les fichiers Android", () => {
     }));
 
     await vi.waitFor(() => expect(context.files.chooseDocumentToOpen).toHaveBeenCalledOnce());
+  });
+
+  it("utilise l’icône Enregistrer pour sauvegarder dans la bibliothèque Android", async () => {
+    const context = setup(true);
+
+    context.saveButton.click();
+
+    await vi.waitFor(() => expect(context.androidAutosave.saveNow).toHaveBeenCalledOnce());
+    await vi.waitFor(() => expect(context.saveButton.disabled).toBe(false));
+    expect(context.files.save).not.toHaveBeenCalled();
+    expect(context.openButton.disabled).toBe(true);
+    expect(context.saveAsButton.disabled).toBe(true);
   });
 
   it("ne restaure plus directement le brouillon dans DocumentStore sur Android", async () => {

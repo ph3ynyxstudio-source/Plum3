@@ -41,30 +41,32 @@ export class MarkdownShareController {
     if (!this.android || !this.button || !this.label) return;
     this.button.hidden = false;
     this.button.addEventListener("click", () => {
-      void this.share();
+      const current = this.store.current;
+      void this.shareDocument(current.name, current.content);
     });
   }
 
-  private async share(): Promise<void> {
-    if (this.busy || !this.button || !this.label) return;
-    const current = this.store.current;
+  async shareDocument(sourceName: string, content: string): Promise<boolean> {
+    if (!this.android || this.busy) return false;
     this.setBusy(true);
     try {
       await this.invokeShare({
-        sourceName: current.name,
-        content: current.content,
+        sourceName,
+        content,
         chooserTitle: t("share.chooserTitle"),
       });
+      return true;
     } catch {
       await this.dialog.showError(t("share.failed"), t("share.failedMessage"));
+      return false;
     } finally {
       this.setBusy(false);
     }
   }
 
   private setBusy(busy: boolean): void {
-    if (!this.button || !this.label) return;
     this.busy = busy;
+    if (!this.button || !this.label) return;
     this.button.disabled = busy;
     this.button.setAttribute("aria-busy", String(busy));
     this.label.textContent = t(busy ? "share.preparing" : "share.markdown");

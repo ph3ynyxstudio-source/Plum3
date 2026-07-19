@@ -110,6 +110,20 @@ export class DocumentStore {
     this.emit();
   }
 
+  markLibraryRenamed(document: {
+    id: string;
+    title: string;
+    updatedAt: string;
+  }): void {
+    if (this.state.libraryDocumentId !== document.id) return;
+    this.state = {
+      ...this.state,
+      name: document.title,
+      lastSavedAt: new Date(document.updatedAt),
+    };
+    this.emit();
+  }
+
   updateContent(content: string): void {
     if (content === this.state.content) return;
     this.state = { ...this.state, content };
