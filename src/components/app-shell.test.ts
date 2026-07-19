@@ -9,6 +9,7 @@ describe("actions de la colonne gauche", () => {
       'class="new-document"',
       'class="open-document"',
       'class="view-all-templates"',
+      'class="sidebar-share-markdown"',
       'class="sidebar-export"',
       'class="sidebar-settings"',
     ];
@@ -23,7 +24,7 @@ describe("actions de la colonne gauche", () => {
 
   it("fournit un aria-label et un title localisables à chaque action", () => {
     const shell = renderAppShell();
-    ["nav.new", "nav.open", "nav.templates", "export.document", "nav.settings"].forEach((key) => {
+    ["nav.new", "nav.open", "nav.templates", "share.markdown", "export.document", "nav.settings"].forEach((key) => {
       expect(shell).toContain(`data-i18n-aria-label="${key}"`);
       expect(shell).toContain(`data-i18n-title="${key}"`);
     });
@@ -41,12 +42,14 @@ describe("actions de la colonne gauche", () => {
   it("expose les deux panneaux mobiles sans dupliquer leur contenu", () => {
     const shell = renderAppShell();
     expect(shell).toContain('id="mobile-library-panel"');
+    expect(shell).toContain('class="nav-section document-files-section"');
     expect(shell).toContain('aria-controls="mobile-library-panel"');
     expect(shell).toContain('id="writing-settings-panel"');
     expect(shell).toContain('class="icon-button mobile-writing-toggle"');
     expect(shell).toContain('class="mobile-theme-toggle"');
     expect(shell).toContain('data-i18n="android.saveUnavailable"');
     expect(shell).toContain('data-i18n="android.exportUnavailable"');
+    expect(shell).toContain("data-share-markdown");
     expect(shell).toContain(icon("edit"));
     expect(shell).toContain('class="icon-button mobile-writing-close"');
     expect(shell).toContain('class="mobile-panel-scrim"');

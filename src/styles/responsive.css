@@ -375,8 +375,62 @@
   .template-dialog-footer .dialog-actions { justify-content: stretch; }
   .template-dialog-footer .dialog-action { flex: 1; }
 
+  :root[data-platform="android"] .template-dialog-footer {
+    display: grid;
+    flex: 0 0 auto;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 12px 16px calc(env(safe-area-inset-bottom, 0px) + 12px);
+  }
+
+  :root[data-platform="android"] .template-list {
+    min-height: 0;
+    flex: 1 1 auto;
+  }
+
+  :root[data-platform="android"] .template-genre {
+    display: grid;
+    grid-template-columns: minmax(96px, 0.7fr) minmax(0, 1.3fr);
+    align-items: center;
+    gap: 12px;
+    padding: 8px 10px;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-card);
+    font-size: 12px;
+  }
+
+  :root[data-platform="android"] .template-genre select {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  :root[data-platform="android"] .template-dialog-footer .dialog-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
   :root[data-platform="android"] {
     --topbar-height: calc(64px + env(safe-area-inset-top, 0px));
+  }
+
+  :root[data-platform="android"][data-theme="aube"] .left-panel {
+    background: linear-gradient(
+      180deg,
+      #e7edf8 0%,
+      #eee8f4 18%,
+      var(--color-surface-panel) 58%
+    );
+  }
+
+  :root[data-platform="android"][data-theme="nuit"] .left-panel {
+    background: linear-gradient(
+      180deg,
+      #17243b 0%,
+      #182b47 18%,
+      var(--color-surface-panel) 42%
+    );
   }
 
   :root[data-platform="android"] .topbar {
@@ -403,6 +457,37 @@
   :root[data-platform="android"] .save-document-as,
   :root[data-platform="android"] .collapse-right {
     display: none;
+  }
+
+  :root[data-platform="android"] .document-files-section {
+    display: none;
+  }
+
+  :root[data-platform="android"] .mobile-library-section {
+    display: block;
+  }
+
+  :root[data-platform="android"] .mobile-library-view {
+    min-width: 0;
+    min-height: 0;
+    grid-column: 1;
+    grid-row: 2 / 4;
+    overflow: hidden;
+    background: var(--color-background-app);
+  }
+
+  :root[data-platform="android"] .app-shell.is-library-view .mobile-library-view {
+    display: block;
+  }
+
+  :root[data-platform="android"] .app-shell.is-library-view .workspace,
+  :root[data-platform="android"] .app-shell.is-library-view .statusbar {
+    display: none;
+  }
+
+  :root[data-platform="android"] .app-shell.is-library-view .document-title,
+  :root[data-platform="android"] .app-shell.is-library-view .mobile-writing-toggle {
+    visibility: hidden;
   }
 
   :root[data-platform="android"] .mobile-theme-toggle {

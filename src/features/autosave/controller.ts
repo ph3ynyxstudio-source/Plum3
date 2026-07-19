@@ -2,6 +2,7 @@ import type { DocumentController } from "../../documents/document-controller";
 import type { DocumentStore } from "../../documents/document-state";
 import { RecoveryDraftService } from "../../documents/recovery-draft";
 import { subscribeLocale, t } from "../../i18n/i18n";
+import { isAndroid } from "../../platform/platform";
 
 const STORAGE_KEY = "plum3.autosave.v1";
 const DELAY_MS = 2_000;
@@ -18,9 +19,16 @@ export class AutosaveController {
     private readonly store: DocumentStore,
     private readonly documents: DocumentController,
     private readonly recoveryDrafts: RecoveryDraftService,
+    private readonly android = isAndroid(),
   ) {}
 
   initialize(): void {
+    if (this.android) {
+      this.enabled = true;
+      this.toggle.disabled = true;
+      this.render();
+      return;
+    }
     this.toggle.addEventListener("click", () => {
       this.enabled = !this.enabled;
       this.paused = false;

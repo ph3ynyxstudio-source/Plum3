@@ -7,6 +7,7 @@ import { applyTheme, getInitialTheme, type ThemeName } from "./theme/theme";
 import { AppDialog } from "./ui/app-dialog";
 import { TemplateDialog } from "./templates/template-dialog";
 import { RecoveryDraftService } from "./documents/recovery-draft";
+import { RecoveryDraftMigrationController } from "./documents/recovery-draft-migration";
 import { WritingPreferencesController } from "./features/writing-preferences/controller";
 import { WritingPreferencesStorage } from "./features/writing-preferences/storage";
 import { DocumentRenameController } from "./documents/document-rename-controller";
@@ -17,7 +18,11 @@ import { DocumentExportController } from "./features/document-export/controller"
 import { SettingsController } from "./features/settings/controller";
 import { t, translateDocument } from "./i18n/i18n";
 import { AutosaveController } from "./features/autosave/controller";
+import { AndroidLibraryAutosaveController } from "./features/autosave/android-library-controller";
 import { applyPlatformMarker } from "./platform/platform";
+import { AndroidBackController } from "./platform/android-back-controller";
+import { MarkdownShareController } from "./features/markdown-share/controller";
+import { MobileLibraryController } from "./features/library/controller";
 
 const app = document.querySelector<HTMLElement>("#app");
 
@@ -30,7 +35,7 @@ app.innerHTML = renderAppShell();
 translateDocument(app);
 
 if (android) {
-  document.querySelectorAll<HTMLButtonElement>(".save-document, .save-document-as, [data-export-open], [data-export-format]")
+  document.querySelectorAll<HTMLButtonElement>(".open-document, .save-document, .save-document-as, [data-export-open], [data-export-format]")
     .forEach((button) => { button.disabled = true; });
   const exportStatus = document.querySelector<HTMLElement>("[data-export-status]");
   if (exportStatus) {
@@ -51,21 +56,36 @@ document.querySelector<HTMLButtonElement>(".mobile-theme-toggle")?.addEventListe
 
 initializeResponsiveLayout();
 new FocusModeController().initialize();
+new AndroidBackController().initialize();
 
 const appDialog = new AppDialog();
 new SettingsController(appDialog).initialize();
 
 const documentStore = new DocumentStore();
 const fileService = new FileService();
+const recoveryDrafts = new RecoveryDraftService();
+const androidLibraryAutosave = new AndroidLibraryAutosaveController(documentStore);
 const documentController = new DocumentController(
   documentStore,
   fileService,
   appDialog,
   new TemplateDialog(),
-  new RecoveryDraftService(),
+  recoveryDrafts,
+  android,
+  androidLibraryAutosave,
 );
 void documentController.initialize();
-new AutosaveController(documentStore, documentController, new RecoveryDraftService()).initialize();
+new AutosaveController(documentStore, documentController, recoveryDrafts).initialize();
+const mobileLibrary = new MobileLibraryController(
+  documentStore,
+  androidLibraryAutosave,
+  appDialog,
+);
+void (async () => {
+  await new RecoveryDraftMigrationController(recoveryDrafts).initialize();
+  await androidLibraryAutosave.initialize();
+  await mobileLibrary.initialize();
+})();
 new DocumentRenameController(documentStore, fileService, appDialog).initialize();
 
 const writingPreferences = new WritingPreferencesController(
@@ -75,6 +95,7 @@ const writingPreferences = new WritingPreferencesController(
 writingPreferences.initialize();
 new DisplayPreferencesController(new DisplayPreferencesStorage(), documentStore).initialize();
 new DocumentExportController(documentStore, appDialog).initialize();
+new MarkdownShareController(documentStore, appDialog).initialize();
 
 function initializeResponsiveLayout(): void {
   const shell = document.querySelector<HTMLElement>(".app-shell");

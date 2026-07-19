@@ -12,15 +12,22 @@ export class RecoveryDraftService {
       const serialized = localStorage.getItem(RECOVERY_DRAFT_KEY);
       if (!serialized) return null;
       const candidate = JSON.parse(serialized) as Partial<RecoveryDraft>;
-      if (
-        typeof candidate.name !== "string" ||
-        typeof candidate.content !== "string" ||
-        typeof candidate.savedAt !== "string"
-      ) {
+      if (!isRecoveryDraft(candidate)) {
         localStorage.removeItem(RECOVERY_DRAFT_KEY);
         return null;
       }
-      return candidate as RecoveryDraft;
+      return candidate;
+    } catch {
+      return null;
+    }
+  }
+
+  loadForMigration(): RecoveryDraft | null {
+    try {
+      const serialized = localStorage.getItem(RECOVERY_DRAFT_KEY);
+      if (!serialized) return null;
+      const candidate = JSON.parse(serialized) as Partial<RecoveryDraft>;
+      return isRecoveryDraft(candidate) ? candidate : null;
     } catch {
       return null;
     }
@@ -42,6 +49,32 @@ export class RecoveryDraftService {
       // La suppression d’un ancien brouillon ne doit jamais bloquer le document actif.
     }
   }
+
+  clearIfUnchanged(expected: RecoveryDraft): boolean {
+    try {
+      const current = this.loadForMigration();
+      if (
+        !current ||
+        current.name !== expected.name ||
+        current.content !== expected.content ||
+        current.savedAt !== expected.savedAt
+      ) {
+        return false;
+      }
+      localStorage.removeItem(RECOVERY_DRAFT_KEY);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+}
+
+function isRecoveryDraft(candidate: Partial<RecoveryDraft>): candidate is RecoveryDraft {
+  return (
+    typeof candidate.name === "string" &&
+    typeof candidate.content === "string" &&
+    typeof candidate.savedAt === "string"
+  );
 }
 
 export function recoveredDocumentName(name: string): string {

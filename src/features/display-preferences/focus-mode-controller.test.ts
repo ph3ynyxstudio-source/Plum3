@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { PluginListener } from "@tauri-apps/api/core";
-import { FocusModeController, type AndroidBackRegistrar } from "./focus-mode-controller";
+import { FocusModeController } from "./focus-mode-controller";
 
 class FakeClassList {
   private readonly values = new Set<string>();
@@ -21,16 +20,23 @@ class FakeElement {
   readonly classList = new FakeClassList();
   readonly focus = vi.fn();
   hidden = false;
-  private readonly listeners = new Map<string, Array<() => void>>();
-  private readonly attributes = new Map<string, string>();
   textContent = "";
+  private readonly listeners = new Map<string, Array<(event: { key?: string; preventDefault: () => void }) => void>>();
+  private readonly attributes = new Map<string, string>();
 
-  addEventListener(type: string, listener: () => void): void {
+  addEventListener(
+    type: string,
+    listener: (event: { key?: string; preventDefault: () => void }) => void,
+  ): void {
     this.listeners.set(type, [...(this.listeners.get(type) ?? []), listener]);
   }
 
   click(): void {
-    this.listeners.get("click")?.forEach((listener) => listener());
+    this.listeners.get("click")?.forEach((listener) => listener({ preventDefault: vi.fn() }));
+  }
+
+  dispatch(type: string, event: { key?: string; preventDefault: () => void }): void {
+    this.listeners.get(type)?.forEach((listener) => listener(event));
   }
 
   setAttribute(name: string, value: string): void {
@@ -38,14 +44,15 @@ class FakeElement {
   }
 }
 
-describe("FocusModeController sur Android", () => {
+describe("FocusModeController", () => {
   afterEach(() => vi.unstubAllGlobals());
 
-  it("quitte le mode concentration avec le bouton Retour natif", async () => {
+  it("quitte le mode concentration avec Échap, utilisé aussi par le contrôleur Retour Android", async () => {
     const shell = new FakeElement();
     const toggle = new FakeElement();
     const label = new FakeElement();
     const editor = new FakeElement();
+    const documentListeners = new Map<string, Array<(event: { key?: string; preventDefault: () => void }) => void>>();
     const elements = new Map<string, FakeElement>([
       [".app-shell", shell],
       ["[data-focus-mode-toggle]", toggle],
@@ -54,25 +61,24 @@ describe("FocusModeController sur Android", () => {
     ]);
     vi.stubGlobal("document", {
       querySelector: (selector: string) => elements.get(selector) ?? null,
-      addEventListener: vi.fn(),
+      addEventListener: (
+        type: string,
+        listener: (event: { key?: string; preventDefault: () => void }) => void,
+      ) => documentListeners.set(type, [...(documentListeners.get(type) ?? []), listener]),
       dispatchEvent: vi.fn(),
       documentElement: { lang: "fr" },
     });
-    const unregister = vi.fn().mockResolvedValue(undefined);
-    let backHandler: (() => void) | undefined;
-    const register = vi.fn(async (handler: () => void) => {
-      backHandler = handler;
-      return { unregister } as unknown as PluginListener;
-    }) as unknown as AndroidBackRegistrar;
-    const controller = new FocusModeController(true, register);
+    const controller = new FocusModeController();
     controller.initialize();
 
     toggle.click();
-    await vi.waitFor(() => expect(register).toHaveBeenCalledOnce());
     expect(shell.classList.contains("is-focus-mode")).toBe(true);
 
-    backHandler?.();
-    await vi.waitFor(() => expect(unregister).toHaveBeenCalledOnce());
-    expect(shell.classList.contains("is-focus-mode")).toBe(false);
+    const preventDefault = vi.fn();
+    documentListeners.get("keydown")?.forEach((listener) => listener({ key: "Escape", preventDefault }));
+
+    await vi.waitFor(() => expect(shell.classList.contains("is-focus-mode")).toBe(false));
+    expect(preventDefault).toHaveBeenCalledOnce();
+    expect(toggle.focus).toHaveBeenCalledOnce();
   });
 });

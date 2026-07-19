@@ -5,6 +5,7 @@ export interface FileVersion {
 }
 
 export interface DocumentState {
+  libraryDocumentId: string | null;
   name: string;
   path: string | null;
   content: string;
@@ -64,8 +65,47 @@ export class DocumentStore {
   }): void {
     this.state = {
       ...document,
+      libraryDocumentId: null,
       savedContent: document.content,
       lastSavedAt: new Date(document.version.modifiedMillis),
+    };
+    this.emit();
+  }
+
+  loadLibraryDocument(document: {
+    id: string;
+    title: string;
+    content: string;
+    updatedAt: string;
+  }): void {
+    this.state = {
+      ...this.createBlankState(),
+      libraryDocumentId: document.id,
+      name: document.title,
+      content: document.content,
+      savedContent: document.content,
+      lastSavedAt: new Date(document.updatedAt),
+    };
+    this.emit();
+  }
+
+  markLibrarySaved(document: {
+    id: string;
+    title: string;
+    updatedAt: string;
+  }, savedContent: string): void {
+    if (
+      this.state.libraryDocumentId !== null &&
+      this.state.libraryDocumentId !== document.id
+    ) {
+      return;
+    }
+    this.state = {
+      ...this.state,
+      libraryDocumentId: document.id,
+      name: document.title,
+      savedContent,
+      lastSavedAt: new Date(document.updatedAt),
     };
     this.emit();
   }
@@ -103,6 +143,7 @@ export class DocumentStore {
 
   private createBlankState(): DocumentState {
     return {
+      libraryDocumentId: null,
       name: "Sans titre.md",
       path: null,
       content: "",

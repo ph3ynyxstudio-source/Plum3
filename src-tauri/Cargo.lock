@@ -3189,9 +3189,11 @@ dependencies = [
  "pulldown-cmark",
  "rfd",
  "serde",
+ "serde_json",
  "tauri",
  "tauri-build",
  "tauri-plugin-opener",
+ "uuid",
 ]
 
 [[package]]

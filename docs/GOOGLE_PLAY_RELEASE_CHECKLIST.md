@@ -1,6 +1,7 @@
-# Checklist de publication Google Play — Plum3 Android
 
-Dernière vérification : **17 juillet 2026 à 10 h 58 (heure de Toronto)**
+# Checklist de publication Google Play — Plum3
+
+Dernière vérification : **17 juillet 2026 à 17 h 53 (heure de Toronto)**
 
 Cette checklist concerne la future publication de **Plum3 Free** sur Google Play.
 Elle ne remplace pas les règles officielles de Google Play, qui peuvent évoluer.
@@ -29,6 +30,9 @@ Elle ne remplace pas les règles officielles de Google Play, qui peuvent évolue
   l’interface actuelle.
 - [x] `keystore.properties` et `key.properties` sont ignorés par Git dans le
   projet Android généré.
+- [x] Le brouillon local actuel a été récupéré avec succès sur le Nothing Phone
+  après fermeture normale, forçage d’arrêt, redémarrage complet du téléphone
+  et installation d’un nouvel APK par-dessus l’application existante.
 - [ ] Plum3 n’est pas encore prêt pour une soumission Google Play.
 
 > Plum3 cible déjà Android 16/API 36 et satisfait donc l’exigence annoncée
@@ -42,29 +46,85 @@ Elle ne remplace pas les règles officielles de Google Play, qui peuvent évolue
   indisponible, notamment « Ouvrir un document ».
 - [ ] Implémenter la bibliothèque locale Android fiable.
 - [ ] Vérifier l’autosauvegarde, le redémarrage et le passage en arrière-plan.
-- [ ] Permettre le partage individuel d’un véritable fichier Markdown.
+- [x] Permettre le partage individuel d’un véritable fichier Markdown.
 - [ ] Afficher clairement que la désinstallation supprime la bibliothèque
   privée locale.
 - [ ] Conserver PDF et DOCX désactivés tant qu’ils ne fonctionnent pas réellement.
 - [ ] Ne mentionner dans la fiche Play Store aucune fonction encore absente.
-- [ ] Tester Aube et Nuit sans zoom et sans chevauchement avec les barres système.
+- [x] Tester Aube et Nuit sans zoom et sans chevauchement avec les barres système.
 - [ ] Tester le bouton Retour Android dans chaque vue, tiroir, modale et mode
   concentration.
 - [ ] Tester l’application hors ligne.
 
+### Audit Android et persistance actuelle — 17 juillet 2026
+
+- [x] Audit en lecture seule du stockage Android terminé.
+- [x] L’état Git est demeuré propre et aucun commit n’a été créé pendant l’audit.
+- [x] Validations réussies : lint, typecheck, contrôle de version, 33 tests
+  frontend, build frontend, 14 tests Rust et `git diff --check`.
+- [x] Le brouillon unique actuel survit à un forçage d’arrêt.
+- [x] Le brouillon unique actuel survit à un redémarrage complet du téléphone.
+- [x] Le brouillon unique actuel survit à l’installation d’un nouvel APK par-dessus
+  la version existante, sans désinstallation.
+- [ ] Ces résultats ne valident pas encore la future bibliothèque multi-documents,
+  son autosauvegarde, ses migrations ni une mise à jour distribuée par Google Play.
+
+### Partage Markdown natif — 17 juillet 2026
+
+- [x] Une action « Partager en Markdown » est visible uniquement sur Android.
+- [x] Le partage crée un véritable fichier `.md` UTF-8 contenant le nom et le
+  contenu actuels du document, sans modifier le document source.
+- [x] Le fichier temporaire est créé dans le cache privé
+  `cache/markdown-shares/`, puis transmis par `ACTION_SEND` avec le type
+  `text/markdown` et une URI `content://` accordée en lecture seulement.
+- [x] Le `FileProvider` n’expose plus le stockage externe ni la racine du cache :
+  seul `markdown-shares/` est déclaré.
+- [x] Validation sur le Nothing Phone : APK ARM64 debug installé, bouton visible,
+  parcours de partage Android déclenché et fichier
+  `Brouillon récupéré - Scénario.md` vérifié dans le cache privé avec les
+  113 lignes Markdown attendues.
+- [x] PDF et DOCX restent désactivés sur Android; le comportement Windows demeure
+  inchangé et couvert par les tests existants.
+- [ ] Tester encore l’envoi du fichier vers plusieurs applications compatibles
+  avant la publication.
+
+> Conclusion actualisée : l’Étape 2 demeure **partiellement validée**. « Ouvrir un
+> document », les documents récents et `Ctrl+O` sont maintenant neutralisés dans le
+> code Android sans modifier Windows. La validation physique du bouton Retour et de
+> l’absence de ces actions sur le Nothing Phone reste nécessaire avant de cocher les
+> cases correspondantes.
+
+### Finalisation des actions mobiles — 17 juillet 2026
+
+- [x] La section « Ouvrir un document » et les documents récents est masquée
+  uniquement sur Android.
+- [x] Les appels d’ouverture, de documents récents et d’autosauvegarde vers un
+  fichier sont bloqués dans le contrôleur Android.
+- [x] `Ctrl+O` ne déclenche aucune commande native sur Android.
+- [x] Le comportement d’ouverture Windows est conservé par un test dédié.
+- [x] Un contrôleur unique gère la priorité du bouton Retour Android pour les
+  dialogues, modèles, paramètres, renommage, panneaux mobiles et mode concentration.
+- [x] Validations automatisées réussies : lint, typecheck, 45 tests frontend,
+  build frontend, manifeste ARM64 et assemblage de l’APK ARM64 debug.
+- [x] Les thèmes Aube et Nuit ainsi que le mode concentration ont été confirmés
+  sur le Nothing Phone par l’utilisateur.
+- [ ] Installer ce nouvel APK et valider physiquement le bouton Retour ainsi que
+  l’absence des actions d’ouverture sur le Nothing Phone.
+
 ## 2. Compte développeur et identité
 
-- [ ] Créer ou vérifier le compte Google Play Console.
-- [ ] Terminer la vérification d’identité du développeur Android.
-- [ ] Confirmer le nom public du développeur : `Ph3yNyx.Studio`.
-- [ ] Confirmer l’adresse courriel de soutien publique.
-- [ ] Confirmer le site officiel : `https://ph3ynyx.dev/`.
-- [ ] Accepter les règles du programme développeur et les conditions de
-  Play App Signing.
-- [ ] Vérifier la date de création et le type du compte Google Play.
-- [ ] Si le compte personnel a été créé après le 13 novembre 2023, prévoir un
-  test fermé avec au moins 12 testeurs inscrits continuellement pendant
-  14 jours avant de demander l’accès à la production.
+- [x] Compte Google Play Console créé et vérifié.
+- [x] Vérification d’identité du développeur Android terminée.
+- [x] Nom public du développeur confirmé : `Ph3yNyx.Studio`.
+- [x] Adresse courriel de soutien publique choisie :
+  `phey.rainville@hotmail.com`.
+- [x] Site officiel confirmé : `https://ph3ynyx.dev/`.
+- [ ] Accepter ou confirmer les règles du programme développeur et les conditions
+  de Play App Signing au moment de la première release.
+- [x] Type et date du compte vérifiés : compte personnel créé le 15 mars 2026.
+- [x] Exigence de test fermé identifiée pour ce compte personnel créé après le
+  13 novembre 2023 : prévoir au moins 12 testeurs inscrits continuellement
+  pendant 14 jours avant de demander l’accès à la production.
 - [ ] Recruter idéalement 15 à 18 personnes afin qu’un désistement ne fasse pas
   retomber le nombre de testeurs actifs sous 12.
 
@@ -92,13 +152,10 @@ Elle ne remplace pas les règles officielles de Google Play, qui peuvent évolue
   réellement utilisés.
 - [ ] Confirmer qu’aucun document ni contenu utilisateur n’est transmis.
 - [ ] Vérifier que le build release conserve `usesCleartextTraffic=false`.
-- [ ] Restreindre le `FileProvider` : la configuration actuelle expose des
-  chemins trop larges avec `<external-path path=".">` et `<cache-path path=".">`.
-- [ ] N’exposer que le sous-dossier temporaire nécessaire au partage Markdown.
-- [ ] Retirer `LEANBACK_LAUNCHER` et les déclarations Android TV si Plum3 ne
-  cible pas officiellement Android TV.
-- [ ] Si Android TV est conservé, réaliser l’interface, les tests, la bannière
-  et les captures TV exigées.
+- [x] Restreindre le `FileProvider` : aucun `<external-path>` ni chemin racine
+  du cache n’est exposé.
+- [x] N’exposer que le sous-dossier temporaire `markdown-shares/` nécessaire au
+  partage Markdown.
 - [ ] Vérifier les comportements portrait, paysage et redimensionnement.
 - [ ] Vérifier l’affichage sur téléphone, tablette et grand écran.
 - [ ] Vérifier qu’aucune permission sensible inutile n’est demandée.
@@ -192,9 +249,9 @@ Ne pas placer le mot de passe ou le chemin privé réel dans cette checklist.
   limite.
 - [ ] Archiver l’AAB final, son SHA-256, sa version et son `versionCode`.
 
-Le dernier APK debug ARM64 du 17 juillet 2026 pèse `337 745 052` octets,
-soit environ `322,1 MiB`. Son SHA-256 est
-`CC2438F140C5895A6258A104E4EA1230F704EF0B8F814F9B5A58A3126813AAFA`.
+Le dernier APK debug ARM64 du 17 juillet 2026 pèse `342 256 668` octets,
+soit environ `326,4 MiB`. Son SHA-256 est
+`8F8F753BA72DDD31D48FCACDD5D4F62EB10DE89B8691E3DCD767ADAFCE68712E`.
 Cette taille n’est pas représentative d’un AAB release optimisé, mais elle rend
 le contrôle de taille obligatoire avant publication.
 
@@ -277,6 +334,10 @@ npm run tauri -- android build --aab --target aarch64
 - [ ] Tester un appareil à faible mémoire.
 - [ ] Tester le démarrage à froid et après mise à jour.
 - [ ] Tester la conservation des documents pendant une mise à jour.
+  - Observation préliminaire : le brouillon local actuel a survécu à
+    l’installation d’un nouvel APK par-dessus la version existante sur le
+    Nothing Phone. Ce test devra être répété avec la bibliothèque finale et
+    une version distribuée par Google Play.
 - [ ] Tester le comportement après refus d’une permission, s’il en reste.
 - [ ] Tester le partage Markdown vers plusieurs applications.
 - [ ] Tester l’application sans réseau.
@@ -305,16 +366,17 @@ npm run tauri -- android build --aab --target aarch64
 
 ## Blocages confirmés avant publication
 
-1. Bibliothèque locale Android pas encore terminée.
+> Le compte Google Play Console, l’identité, le nom public du développeur,
+> le type et la date du compte ainsi que l’adresse de soutien choisie sont
+> maintenant confirmés. Ils ne constituent plus des blocages.
+
+1. Bibliothèque locale Android à valider sur le Nothing Phone.
 2. Certaines actions Android restent indisponibles.
-3. Partage Markdown natif pas encore finalisé.
-4. Configuration Android TV probablement inutile à retirer.
-5. `FileProvider` trop permissif à restreindre.
-6. Permission Internet à justifier ou retirer.
-7. Clé d’envoi et signature release non configurées.
-8. Aucun AAB release signé et testé.
-9. Taille réelle Play Store inconnue.
-10. Fiche, déclarations et piste de test Play Console non préparées.
+3. Permission Internet à justifier ou retirer.
+4. Clé d’envoi et signature release non configurées.
+5. Aucun AAB release signé et testé.
+6. Taille réelle Play Store inconnue.
+7. Fiche, déclarations et piste de test Play Console non préparées.
 
 ## Références officielles
 

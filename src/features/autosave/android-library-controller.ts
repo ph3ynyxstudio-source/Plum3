@@ -1,0 +1,164 @@
+import { invoke } from "@tauri-apps/api/core";
+import type { DocumentState, DocumentStore } from "../../documents/document-state";
+import type { LibraryDocument } from "../../documents/recovery-draft-migration";
+import { t } from "../../i18n/i18n";
+import { isAndroid } from "../../platform/platform";
+
+const DELAY_MS = 2_000;
+
+export interface LibraryDocumentContent {
+  document: LibraryDocument;
+  content: string;
+}
+
+export interface AndroidLibraryGateway {
+  loadActive(): Promise<LibraryDocumentContent | null>;
+  create(request: {
+    title: string;
+    content: string;
+    templateType: string | null;
+  }): Promise<LibraryDocument>;
+  save(request: {
+    documentId: string;
+    content: string;
+  }): Promise<LibraryDocument>;
+}
+
+const tauriGateway: AndroidLibraryGateway = {
+  loadActive: () => invoke("load_active_library_document"),
+  create: (request) => invoke("create_library_document", { request }),
+  save: (request) => invoke("save_library_document", { request }),
+};
+
+interface SaveSnapshot {
+  libraryDocumentId: string | null;
+  name: string;
+  content: string;
+  savedContent: string;
+}
+
+export class AndroidLibraryAutosaveController {
+  private timer: number | null = null;
+  private queue: Promise<boolean> = Promise.resolve(true);
+  private previous: SaveSnapshot | null = null;
+  private initialized = false;
+  private readonly status: HTMLElement | null;
+
+  constructor(
+    private readonly store: DocumentStore,
+    private readonly gateway: AndroidLibraryGateway = tauriGateway,
+    private readonly android = isAndroid(),
+    root: ParentNode = document,
+  ) {
+    this.status = root.querySelector<HTMLElement>("[data-autosave-status]");
+  }
+
+  async initialize(): Promise<void> {
+    if (!this.android || this.initialized) return;
+    this.initialized = true;
+    try {
+      const active = await this.gateway.loadActive();
+      if (active) {
+        this.store.loadLibraryDocument({
+          id: active.document.id,
+          title: active.document.title,
+          content: active.content,
+          updatedAt: active.document.updatedAt,
+        });
+      }
+    } catch {
+      this.setStatus("autosave.paused");
+    }
+
+    this.previous = this.snapshot(this.store.current);
+    this.store.subscribe((state) => this.handleState(state));
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") void this.flush();
+    });
+  }
+
+  async flush(): Promise<boolean> {
+    if (!this.android) return true;
+    this.cancelTimer();
+    const snapshot = this.snapshot(this.store.current);
+    if (snapshot.content !== snapshot.savedContent) {
+      this.enqueue(snapshot);
+    }
+    return this.queue;
+  }
+
+  private handleState(state: Readonly<DocumentState>): void {
+    const current = this.snapshot(state);
+    if (
+      this.previous &&
+      this.previous.libraryDocumentId !== current.libraryDocumentId &&
+      this.previous.content !== this.previous.savedContent
+    ) {
+      this.enqueue(this.previous);
+    }
+    this.previous = current;
+    this.schedule();
+  }
+
+  private schedule(): void {
+    this.cancelTimer();
+    if (!this.store.isDirty) return;
+    this.timer = window.setTimeout(() => {
+      this.timer = null;
+      this.enqueue(this.snapshot(this.store.current));
+    }, DELAY_MS);
+  }
+
+  private enqueue(snapshot: SaveSnapshot): void {
+    this.queue = this.queue
+      .then(() => this.persist(snapshot))
+      .catch(() => false);
+  }
+
+  private async persist(snapshot: SaveSnapshot): Promise<boolean> {
+    if (snapshot.content === snapshot.savedContent) return true;
+    this.setStatus("autosave.saving");
+    try {
+      const document = snapshot.libraryDocumentId
+        ? await this.gateway.save({
+            documentId: snapshot.libraryDocumentId,
+            content: snapshot.content,
+          })
+        : await this.gateway.create({
+            title: snapshot.name,
+            content: snapshot.content,
+            templateType: null,
+          });
+      const current = this.store.current;
+      const sameDocument = snapshot.libraryDocumentId
+        ? current.libraryDocumentId === snapshot.libraryDocumentId
+        : current.libraryDocumentId === null && current.name === snapshot.name;
+      if (sameDocument) {
+        this.store.markLibrarySaved(document, snapshot.content);
+        if (!this.store.isDirty) this.setStatus("autosave.saved");
+      }
+      return true;
+    } catch {
+      this.setStatus("autosave.paused");
+      return false;
+    }
+  }
+
+  private snapshot(state: Readonly<DocumentState>): SaveSnapshot {
+    return {
+      libraryDocumentId: state.libraryDocumentId,
+      name: state.name,
+      content: state.content,
+      savedContent: state.savedContent,
+    };
+  }
+
+  private cancelTimer(): void {
+    if (this.timer !== null) window.clearTimeout(this.timer);
+    this.timer = null;
+  }
+
+  private setStatus(key: "autosave.paused" | "autosave.saved" | "autosave.saving"): void {
+    if (this.status) this.status.textContent = t(key);
+  }
+}

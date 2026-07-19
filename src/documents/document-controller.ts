@@ -10,6 +10,10 @@ import { icon } from "../ui/icons";
 import { getLocale, localeTag, subscribeLocale, t } from "../i18n/i18n";
 import { isAndroid } from "../platform/platform";
 
+export interface AndroidDocumentAutosave {
+  flush(): Promise<boolean>;
+}
+
 export class DocumentController {
   private readonly editor = this.requireElement<HTMLTextAreaElement>("[data-document-editor]");
   private readonly title = this.requireElement<HTMLElement>("[data-document-title]");
@@ -37,37 +41,58 @@ export class DocumentController {
     private readonly templates: TemplateDialog,
     private readonly recoveryDrafts: RecoveryDraftService,
     private readonly android = isAndroid(),
+    private readonly androidAutosave: AndroidDocumentAutosave | null = null,
   ) {}
 
   async initialize(): Promise<void> {
     this.bindActions();
     if (this.android) {
-      document.querySelectorAll<HTMLButtonElement>(".save-document, .save-document-as").forEach((button) => {
+      document.querySelectorAll<HTMLButtonElement>(".open-document, .save-document, .save-document-as").forEach((button) => {
         button.disabled = true;
       });
+      this.recentDocuments.replaceChildren();
     }
-    const recoveryDraft = this.recoveryDrafts.load();
-    if (recoveryDraft) {
-      this.store.restoreDraft(
-        recoveredDocumentName(recoveryDraft.name),
-        recoveryDraft.content,
-      );
+    if (!this.android) {
+      const recoveryDraft = this.recoveryDrafts.load();
+      if (recoveryDraft) {
+        this.store.restoreDraft(
+          recoveredDocumentName(recoveryDraft.name),
+          recoveryDraft.content,
+        );
+      }
     }
     this.store.subscribe((state) => {
       this.render();
-      if (state.path !== this.recentActivePath) {
+      if (!this.android && state.path !== this.recentActivePath) {
         this.recentActivePath = state.path;
         void this.refreshRecentDocuments();
       }
     });
     subscribeLocale(() => {
       this.render();
-      void this.refreshRecentDocuments();
+      if (!this.android) void this.refreshRecentDocuments();
     });
 
     await getCurrentWindow().onCloseRequested(async (event) => {
       if (this.closing || !this.store.isDirty) return;
       event.preventDefault();
+      if (this.android && this.androidAutosave) {
+        if (await this.androidAutosave.flush()) {
+          this.closing = true;
+          try {
+            await getCurrentWindow().destroy();
+          } catch (cause) {
+            this.closing = false;
+            await this.showFileError(t("error.closeApp"), cause);
+          }
+        } else {
+          await this.showFileError(
+            t("error.saveFailed"),
+            new Error(t("autosave.paused")),
+          );
+        }
+        return;
+      }
       if (this.busy) {
         await this.dialog.showError(
           t("dialog.operationInProgress"),
@@ -90,7 +115,7 @@ export class DocumentController {
   }
 
   async autosaveCurrentDocument(): Promise<boolean> {
-    if (this.busy || !this.store.isDirty || !this.store.current.path) return false;
+    if (this.android || this.busy || !this.store.isDirty || !this.store.current.path) return false;
     const document = this.store.current;
     return this.runBusy(async () =>
       this.writeDocument(
@@ -154,6 +179,7 @@ export class DocumentController {
   }
 
   private async removeRecentDocument(path: string): Promise<void> {
+    if (this.android) return;
     try {
       await this.files.removeRecentDocument(path);
       await this.refreshRecentDocuments();
@@ -166,14 +192,20 @@ export class DocumentController {
     if (this.busy) return;
     const selection = await this.templates.show(initialTemplateId);
     if (!selection) return;
-    if (!(await this.resolveUnsavedChanges(t("dialog.createFromTemplate")))) return;
+    if (this.android) {
+      if (this.androidAutosave && !(await this.androidAutosave.flush())) return;
+    } else if (!(await this.resolveUnsavedChanges(t("dialog.createFromTemplate")))) {
+      return;
+    }
     const content = buildTemplateContent(selection.template, selection.genre, getLocale());
     this.recoveryDrafts.clear();
     this.store.createFromTemplate(templateDocumentName(selection.template), content);
+    document.dispatchEvent(new CustomEvent("plum3:document-created"));
     this.editor.focus();
   }
 
   private async openDocument(): Promise<void> {
+    if (this.android) return;
     if (!(await this.resolveUnsavedChanges(t("dialog.openAnother")))) return;
     await this.runBusy(async () => {
       try {
@@ -190,7 +222,7 @@ export class DocumentController {
   }
 
   private async openRecentDocument(path: string): Promise<void> {
-    if (this.busy) return;
+    if (this.android || this.busy) return;
     if (!(await this.resolveUnsavedChanges(t("dialog.openAnother")))) return;
     await this.runBusy(async () => {
       try {
@@ -389,6 +421,7 @@ export class DocumentController {
   }
 
   private async refreshRecentDocuments(): Promise<void> {
+    if (this.android) return;
     try {
       this.renderRecentDocuments(await this.files.listRecentDocuments());
     } catch {

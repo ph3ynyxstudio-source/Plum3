@@ -78,6 +78,39 @@ function renderEditor(): string {
     </main>`;
 }
 
+function renderMobileLibraryView(): string {
+  return `
+    <section class="mobile-library-view" data-library-view aria-labelledby="library-title">
+      <div class="library-page-scroll">
+        <header class="library-page-header">
+          <div>
+            <h1 id="library-title" data-i18n="library.title">Bibliothèque locale</h1>
+            <p data-i18n="library.subtitle">Tous vos documents enregistrés sur cet appareil.</p>
+          </div>
+          ${icon("book")}
+        </header>
+        <button class="library-new-document" data-library-new type="button">${icon("plus")}<span data-i18n="nav.new">Nouveau document</span></button>
+        <label class="library-search">
+          ${icon("search")}
+          <input data-library-search type="search" placeholder="Rechercher un document" data-i18n-placeholder="library.search" />
+        </label>
+        <div class="library-filters" role="group" aria-label="Filtres" data-i18n-aria-label="library.filters">
+          <button class="is-active" data-library-filter="all" type="button" data-i18n="library.all">Tous</button>
+          <button data-library-filter="recent" type="button" data-i18n="library.recent">Récents</button>
+        </div>
+        <div class="library-document-list" data-library-documents></div>
+        <section class="library-empty-state" data-library-empty hidden>
+          ${icon("book")}
+          <h2 data-i18n="library.emptyTitle">Aucun document pour l’instant.</h2>
+          <p data-i18n="library.emptyMessage">Crée ton premier document pour commencer.</p>
+          <button data-library-new type="button" data-i18n="nav.new">Nouveau document</button>
+        </section>
+        <p class="library-no-results" data-library-no-results data-i18n="library.noResults" hidden>Aucun document ne correspond à cette recherche.</p>
+        <aside class="library-local-note">${icon("folder")}<p><span data-i18n="library.localInfo">Vos documents sont stockés localement sur cet appareil.</span><br /><span data-i18n="library.uninstallInfo">Ils seront supprimés si Plum3 est désinstallé.</span></p></aside>
+      </div>
+    </section>`;
+}
+
 function renderRightPanel(): string {
   return `
     <aside id="writing-settings-panel" class="right-panel" aria-label="Réglages d’écriture" data-i18n-aria-label="writing.title">
@@ -183,7 +216,12 @@ export function renderAppShell(): string {
         </div>
         <button class="new-document" data-document-action="new" type="button" aria-label="Nouveau document" data-i18n-aria-label="nav.new" title="Nouveau document" data-i18n-title="nav.new">${icon("plus")}<span data-i18n="nav.new">Nouveau document</span><b>🪶</b></button>
         <div class="sidebar-scroll">
-          <section class="nav-section">
+          <section class="nav-section mobile-library-section">
+            <div class="section-heading"><h2 data-i18n="library.section">Bibliothèque</h2></div>
+            <div class="mobile-library-quick-list" data-library-quick-list></div>
+            <button class="view-full-library" data-library-open type="button">${icon("book")}<span data-i18n="library.viewAll">Voir toute la bibliothèque</span>${icon("chevronRight")}</button>
+          </section>
+          <section class="nav-section document-files-section">
             <div class="section-heading"><h2 data-i18n="nav.recent">Documents récents</h2></div>
             <div class="document-list" data-recent-documents>${renderRecentDocuments()}</div>
             <button class="open-document" data-document-action="open" type="button" aria-label="Ouvrir un document" data-i18n-aria-label="nav.open" title="Ouvrir un document" data-i18n-title="nav.open">${icon("folderOpen")}<span data-i18n="nav.open">Ouvrir un document</span></button>
@@ -194,6 +232,7 @@ export function renderAppShell(): string {
             <button class="view-all-templates" data-template-open type="button" aria-label="Modèles d’écriture" data-i18n-aria-label="nav.templates" title="Modèles d’écriture" data-i18n-title="nav.templates">${icon("templates")}<span data-i18n="nav.templates">Modèles d’écriture</span></button>
           </section>
         </div>
+        <button class="sidebar-share-markdown" data-share-markdown type="button" aria-label="Partager en Markdown" data-i18n-aria-label="share.markdown" title="Partager en Markdown" data-i18n-title="share.markdown" hidden>${icon("export")}<span data-share-markdown-label data-i18n="share.markdown">Partager en Markdown</span></button>
         <button class="sidebar-export" data-export-open type="button" aria-label="Exporter le document" data-i18n-aria-label="export.document" title="Exporter le document" data-i18n-title="export.document">${icon("export")}<span data-i18n="export.document">Exporter le document</span></button>
         <div class="mobile-android-limitations" aria-live="polite">
           <p data-i18n="android.saveUnavailable">La sauvegarde de fichiers Android sera disponible dans une prochaine version.</p>
@@ -222,6 +261,7 @@ export function renderAppShell(): string {
       </header>
 
       ${renderEditor()}
+      ${renderMobileLibraryView()}
       ${renderRightPanel()}
 
       <footer class="statusbar">
