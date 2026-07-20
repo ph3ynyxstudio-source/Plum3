@@ -529,6 +529,23 @@
     height: 44px;
     grid-column: auto;
     grid-row: auto;
+    border: 1px solid var(--color-border-default);
+    background: var(--color-surface-card);
+  }
+
+  :root[data-platform="android"] .mobile-writing-toggle:hover,
+  :root[data-platform="android"] .mobile-writing-toggle:focus-visible {
+    border-color: var(--color-border-strong);
+    color: var(--color-accent);
+  }
+
+  :root[data-platform="android"] .saved-dot.is-dirty,
+  :root[data-platform="android"] .saved-dot.is-error {
+    background: var(--color-danger);
+  }
+
+  :root[data-platform="android"] .saved-dot.is-saving {
+    background: var(--color-warning);
   }
 
   :root[data-platform="android"] .toolbar-message-desktop {

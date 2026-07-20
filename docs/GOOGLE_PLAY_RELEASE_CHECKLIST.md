@@ -88,11 +88,10 @@ Elle ne remplace pas les règles officielles de Google Play, qui peuvent évolue
 - [ ] Tester encore l’envoi du fichier vers plusieurs applications compatibles
   avant la publication.
 
-> Conclusion actualisée : l’Étape 2 demeure **partiellement validée**. « Ouvrir un
-> document », les documents récents et `Ctrl+O` sont maintenant neutralisés dans le
-> code Android sans modifier Windows. La validation physique du bouton Retour et de
-> l’absence de ces actions sur le Nothing Phone reste nécessaire avant de cocher les
-> cases correspondantes.
+> Conclusion actualisée : l’Étape 2 est **validée**. « Ouvrir un document », les
+> documents récents et `Ctrl+O` sont neutralisés dans le code Android sans modifier
+> Windows. L’absence de ces actions et le parcours Retour éditeur → bibliothèque →
+> lanceur ont été confirmés sur le Nothing Phone.
 
 ### Finalisation des actions mobiles — 17 juillet 2026
 
@@ -108,8 +107,14 @@ Elle ne remplace pas les règles officielles de Google Play, qui peuvent évolue
   build frontend, manifeste ARM64 et assemblage de l’APK ARM64 debug.
 - [x] Les thèmes Aube et Nuit ainsi que le mode concentration ont été confirmés
   sur le Nothing Phone par l’utilisateur.
-- [ ] Installer ce nouvel APK et valider physiquement le bouton Retour ainsi que
+- [x] Installer ce nouvel APK et valider physiquement le bouton Retour ainsi que
   l’absence des actions d’ouverture sur le Nothing Phone.
+
+> Validation physique du 19 juillet 2026 sur Nothing Phone A059 : APK ARM64 debug
+> installé avec `adb install -r` sans désinstallation ni effacement de la bibliothèque.
+> Le premier Retour depuis l’éditeur ouvre la bibliothèque; le second Retour depuis
+> la bibliothèque ferme l’activité et revient au lanceur Nothing. L’écran Bibliothèque
+> ne présente aucune action « Ouvrir un document ».
 
 ## 2. Compte développeur et identité
 

@@ -80,6 +80,21 @@ describe("AndroidLibraryAutosaveController", () => {
     expect(store.isDirty).toBe(false);
   });
 
+  it("publie les états non sauvegardé, en cours puis sauvegardé", async () => {
+    const { controller, store } = setup("source");
+    const states: string[] = [];
+    controller.subscribeSaveState((state) => states.push(state));
+    await controller.initialize();
+
+    store.updateContent("contenu modifié");
+    await vi.advanceTimersByTimeAsync(2_000);
+    await controller.flush();
+
+    expect(states).toContain("dirty");
+    expect(states).toContain("saving");
+    expect(states.at(-1)).toBe("saved");
+  });
+
   it("sauvegarde le document précédent lorsqu’un nouveau document le remplace", async () => {
     const { controller, gateway, store } = setup("source");
     await controller.initialize();
@@ -116,6 +131,8 @@ describe("AndroidLibraryAutosaveController", () => {
 
   it("signale l’échec et ne produit jamais un faux état sauvegardé", async () => {
     const { controller, gateway, status, store } = setup();
+    const states: string[] = [];
+    controller.subscribeSaveState((state) => states.push(state));
     vi.mocked(gateway.create).mockRejectedValue(new Error("échec disque"));
     await controller.initialize();
     store.createFromTemplate("Échec.md", "texte non sauvegardé");
@@ -125,6 +142,9 @@ describe("AndroidLibraryAutosaveController", () => {
 
     expect(status.textContent).toBe("Sauvegarde automatique suspendue.");
     expect(store.isDirty).toBe(true);
+    expect(states).toContain("saving");
+    expect(states.at(-1)).toBe("error");
+    expect(states.at(-1)).not.toBe("saved");
   });
 
   it("crée manuellement un document vide encore absent de la bibliothèque", async () => {

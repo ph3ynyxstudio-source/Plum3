@@ -9,10 +9,12 @@ import { displayDocumentName } from "./document-name";
 import { icon } from "../ui/icons";
 import { getLocale, localeTag, subscribeLocale, t } from "../i18n/i18n";
 import { isAndroid } from "../platform/platform";
+import type { AndroidSaveState } from "../features/autosave/android-library-controller";
 
 export interface AndroidDocumentAutosave {
   flush(): Promise<boolean>;
   saveNow(): Promise<boolean>;
+  subscribeSaveState?(listener: (state: AndroidSaveState) => void): () => void;
 }
 
 export class DocumentController {
@@ -34,6 +36,7 @@ export class DocumentController {
   private busy = false;
   private closing = false;
   private recentActivePath: string | null | undefined;
+  private androidSaveState: AndroidSaveState = "dirty";
 
   constructor(
     private readonly store: DocumentStore,
@@ -47,6 +50,12 @@ export class DocumentController {
 
   async initialize(): Promise<void> {
     this.bindActions();
+    if (this.android) {
+      this.androidAutosave?.subscribeSaveState?.((state) => {
+        this.androidSaveState = state;
+        this.render();
+      });
+    }
     if (this.android) {
       document.querySelectorAll<HTMLButtonElement>(".open-document, .save-document-as").forEach((button) => {
         button.disabled = true;
@@ -380,15 +389,30 @@ export class DocumentController {
     if (this.editor.value !== state.content) this.editor.value = state.content;
     this.title.textContent = displayDocumentName(state.name);
     this.title.title = state.path ?? "Document non enregistré";
-    const isUnsaved = !state.path;
-    this.documentStatus.textContent = dirty
-      ? t("editor.modified")
-      : isUnsaved
-        ? t("editor.newDocument")
-        : t("editor.saved");
+    const isUnsaved = this.android ? !state.libraryDocumentId : !state.path;
+    this.documentStatus.textContent = this.android
+      ? this.androidSaveState === "saving"
+        ? t("autosave.saving")
+        : this.androidSaveState === "saved"
+          ? t("editor.saved")
+          : this.androidSaveState === "error"
+            ? t("autosave.paused")
+            : t("editor.modified")
+      : dirty
+        ? t("editor.modified")
+        : isUnsaved
+          ? t("editor.newDocument")
+          : t("editor.saved");
     this.saveDots.forEach((dot) => {
-      dot.classList.toggle("is-dirty", dirty);
-      dot.classList.toggle("is-unsaved", isUnsaved && !dirty);
+      if (this.android) {
+        dot.classList.toggle("is-dirty", this.androidSaveState === "dirty");
+        dot.classList.toggle("is-error", this.androidSaveState === "error");
+        dot.classList.toggle("is-saving", this.androidSaveState === "saving");
+        dot.classList.toggle("is-unsaved", false);
+      } else {
+        dot.classList.toggle("is-dirty", dirty);
+        dot.classList.toggle("is-unsaved", isUnsaved && !dirty);
+      }
     });
     if (state.lastSavedAt) {
       const savedDate = state.lastSavedAt.toLocaleDateString(localeTag(), {

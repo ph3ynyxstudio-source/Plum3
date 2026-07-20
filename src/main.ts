@@ -64,7 +64,8 @@ document.querySelector<HTMLButtonElement>(".mobile-theme-toggle")?.addEventListe
 
 initializeResponsiveLayout();
 new FocusModeController().initialize();
-new AndroidBackController().initialize();
+const androidBackController = new AndroidBackController();
+void androidBackController.initialize();
 
 const appDialog = new AppDialog();
 new SettingsController(appDialog).initialize();

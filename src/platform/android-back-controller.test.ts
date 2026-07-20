@@ -66,6 +66,32 @@ describe("AndroidBackController", () => {
     expect(context.closeApp).not.toHaveBeenCalled();
   });
 
+  it("confirme que l’écouteur Android est réellement enregistré", async () => {
+    const register = vi.fn(async () => ({
+      unregister: vi.fn(),
+    }) as unknown as PluginListener) as unknown as AndroidBackRegistrar;
+    const controller = new AndroidBackController(true, register, vi.fn());
+
+    await expect(controller.initialize()).resolves.toBe(true);
+    await expect(controller.initialize()).resolves.toBe(true);
+
+    expect(register).toHaveBeenCalledOnce();
+  });
+
+  it("signale un échec d’enregistrement au lieu de le masquer", async () => {
+    const failure = new Error("permission refusée");
+    const register = vi.fn().mockRejectedValue(failure) as unknown as AndroidBackRegistrar;
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const controller = new AndroidBackController(true, register, vi.fn());
+
+    await expect(controller.initialize()).resolves.toBe(false);
+
+    expect(consoleError).toHaveBeenCalledWith(
+      "Impossible d’enregistrer le bouton Retour Android.",
+      failure,
+    );
+  });
+
   it("ferme d’abord le dialogue applicatif visible", async () => {
     const dialog = new FakeElement();
     const cancel = new FakeElement();
@@ -182,5 +208,18 @@ describe("AndroidBackController", () => {
     await context.pressBack();
 
     expect(context.closeApp).toHaveBeenCalledOnce();
+  });
+
+  it("signale un échec de fermeture depuis la bibliothèque", async () => {
+    const failure = new Error("fermeture refusée");
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const context = setup(new Map());
+    context.closeApp.mockRejectedValue(failure);
+
+    await context.pressBack();
+    await vi.waitFor(() => expect(consoleError).toHaveBeenCalledWith(
+      "Impossible de fermer Plum3 depuis la bibliothèque Android.",
+      failure,
+    ));
   });
 });

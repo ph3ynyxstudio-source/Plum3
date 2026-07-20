@@ -1,3 +1,5 @@
+#[cfg(target_os = "android")]
+mod android_app;
 mod document_export;
 mod file_commands;
 pub mod library;
@@ -5,6 +7,8 @@ pub mod library;
 mod markdown_share;
 mod recent_documents;
 
+#[cfg(target_os = "android")]
+use android_app::close_android_app;
 use document_export::export_document;
 use file_commands::{
     choose_document_save_path, choose_document_to_open, list_recent_documents,
@@ -40,7 +44,9 @@ fn get_app_info() -> AppInfo {
 pub fn run() {
     let builder = tauri::Builder::default();
     #[cfg(target_os = "android")]
-    let builder = builder.plugin(markdown_share::init());
+    let builder = builder
+        .plugin(android_app::init())
+        .plugin(markdown_share::init());
 
     builder
         .plugin(tauri_plugin_opener::init())
@@ -95,6 +101,8 @@ pub fn run() {
             rename_library_document,
             #[cfg(target_os = "android")]
             delete_library_document,
+            #[cfg(target_os = "android")]
+            close_android_app,
             get_app_info
         ])
         .run(tauri::generate_context!())

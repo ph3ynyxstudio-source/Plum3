@@ -1,12 +1,11 @@
 import { onBackButtonPress } from "@tauri-apps/api/app";
-import type { PluginListener } from "@tauri-apps/api/core";
-import { getCurrentWindow } from "@tauri-apps/api/window";
+import { invoke, type PluginListener } from "@tauri-apps/api/core";
 import { isAndroid } from "./platform";
 
 export type AndroidBackRegistrar = typeof onBackButtonPress;
 export type AppCloseRequester = () => Promise<void>;
 
-const requestAppClose: AppCloseRequester = () => getCurrentWindow().close();
+const requestAppClose: AppCloseRequester = () => invoke("close_android_app");
 
 export class AndroidBackController {
   private listener: PluginListener | null = null;
@@ -17,16 +16,19 @@ export class AndroidBackController {
     private readonly closeApp: AppCloseRequester = requestAppClose,
   ) {}
 
-  initialize(): void {
-    if (!this.android || this.listener) return;
-    void this.register();
+  async initialize(): Promise<boolean> {
+    if (!this.android) return false;
+    if (this.listener) return true;
+    return this.register();
   }
 
-  private async register(): Promise<void> {
+  private async register(): Promise<boolean> {
     try {
       this.listener = await this.registerBackButton(() => this.handleBack());
-    } catch {
-      // Android conserve son comportement natif si l’écouteur Tauri est indisponible.
+      return true;
+    } catch (cause) {
+      console.error("Impossible d’enregistrer le bouton Retour Android.", cause);
+      return false;
     }
   }
 
@@ -75,7 +77,9 @@ export class AndroidBackController {
       return;
     }
 
-    void this.closeApp().catch(() => undefined);
+    void this.closeApp().catch((cause) => {
+      console.error("Impossible de fermer Plum3 depuis la bibliothèque Android.", cause);
+    });
   }
 
   private isVisible(element: HTMLElement | null): element is HTMLElement {

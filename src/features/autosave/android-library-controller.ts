@@ -6,6 +6,9 @@ import { isAndroid } from "../../platform/platform";
 
 const DELAY_MS = 2_000;
 
+export type AndroidSaveState = "dirty" | "error" | "saved" | "saving";
+export type AndroidSaveStateListener = (state: AndroidSaveState) => void;
+
 export interface LibraryDocumentContent {
   document: LibraryDocument;
   content: string;
@@ -44,6 +47,8 @@ export class AndroidLibraryAutosaveController {
   private initialized = false;
   private applyingSavedState = false;
   private readonly status: HTMLElement | null;
+  private saveState: AndroidSaveState = "dirty";
+  private readonly saveStateListeners = new Set<AndroidSaveStateListener>();
 
   constructor(
     private readonly store: DocumentStore,
@@ -57,6 +62,7 @@ export class AndroidLibraryAutosaveController {
   async initialize(): Promise<void> {
     if (!this.android || this.initialized) return;
     this.initialized = true;
+    let loadFailed = false;
     try {
       const active = await this.gateway.loadActive();
       if (active) {
@@ -69,13 +75,27 @@ export class AndroidLibraryAutosaveController {
       }
     } catch {
       this.setStatus("autosave.paused");
+      loadFailed = true;
     }
 
     this.previous = this.snapshot(this.store.current);
     this.store.subscribe((state) => this.handleState(state));
+    this.setSaveState(
+      loadFailed
+        ? "error"
+        : this.store.current.libraryDocumentId && !this.store.isDirty
+          ? "saved"
+          : "dirty",
+    );
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "hidden") void this.flush();
     });
+  }
+
+  subscribeSaveState(listener: AndroidSaveStateListener): () => void {
+    this.saveStateListeners.add(listener);
+    listener(this.saveState);
+    return () => this.saveStateListeners.delete(listener);
   }
 
   async flush(): Promise<boolean> {
@@ -100,6 +120,9 @@ export class AndroidLibraryAutosaveController {
     if (this.applyingSavedState) {
       this.previous = current;
       return;
+    }
+    if (current.content !== current.savedContent || !current.libraryDocumentId) {
+      this.setSaveState("dirty");
     }
     if (
       this.previous &&
@@ -130,6 +153,7 @@ export class AndroidLibraryAutosaveController {
   private async persist(snapshot: SaveSnapshot, force = false): Promise<boolean> {
     if (!force && snapshot.content === snapshot.savedContent) return true;
     this.setStatus("autosave.saving");
+    this.setSaveState("saving");
     try {
       const currentBeforeSave = this.store.current;
       const resolvedDocumentId = snapshot.libraryDocumentId
@@ -155,11 +179,21 @@ export class AndroidLibraryAutosaveController {
         } finally {
           this.applyingSavedState = false;
         }
-        if (!this.store.isDirty) this.setStatus("autosave.saved");
+        if (!this.store.isDirty) {
+          this.setStatus("autosave.saved");
+          this.setSaveState("saved");
+        } else {
+          this.setSaveState("dirty");
+        }
+      } else {
+        this.setSaveState(
+          this.store.isDirty || !this.store.current.libraryDocumentId ? "dirty" : "saved",
+        );
       }
       return true;
     } catch {
       this.setStatus("autosave.paused");
+      this.setSaveState("error");
       return false;
     }
   }
@@ -180,5 +214,11 @@ export class AndroidLibraryAutosaveController {
 
   private setStatus(key: "autosave.paused" | "autosave.saved" | "autosave.saving"): void {
     if (this.status) this.status.textContent = t(key);
+  }
+
+  private setSaveState(state: AndroidSaveState): void {
+    if (this.saveState === state) return;
+    this.saveState = state;
+    this.saveStateListeners.forEach((listener) => listener(state));
   }
 }

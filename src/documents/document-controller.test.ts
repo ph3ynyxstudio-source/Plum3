@@ -24,8 +24,17 @@ type Listener = (event: {
 }) => void;
 
 class FakeClassList {
-  toggle(): boolean {
-    return false;
+  private readonly values = new Set<string>();
+
+  toggle(value: string, force?: boolean): boolean {
+    const enabled = force ?? !this.values.has(value);
+    if (enabled) this.values.add(value);
+    else this.values.delete(value);
+    return enabled;
+  }
+
+  contains(value: string): boolean {
+    return this.values.has(value);
   }
 }
 
@@ -68,6 +77,8 @@ function setup(android: boolean) {
   const openButton = new FakeElement();
   const saveButton = new FakeElement();
   const saveAsButton = new FakeElement();
+  const saveDot = new FakeElement();
+  const documentStatus = new FakeElement();
   openButton.dataset.documentAction = "open";
   saveButton.dataset.documentAction = "save";
   saveAsButton.dataset.documentAction = "save-as";
@@ -75,7 +86,7 @@ function setup(android: boolean) {
   const elements = new Map<string, FakeElement>([
     ["[data-document-editor]", editor],
     ["[data-document-title]", new FakeElement()],
-    ["[data-document-status]", new FakeElement()],
+    ["[data-document-status]", documentStatus],
     ["[data-last-save-time]", new FakeElement()],
     ["[data-word-count]", new FakeElement()],
     ["[data-character-count]", new FakeElement()],
@@ -94,6 +105,7 @@ function setup(android: boolean) {
       if (selector === "[data-document-action]") {
         return [openButton, saveButton, saveAsButton];
       }
+      if (selector === "[data-document-save-dot]") return [saveDot];
       if (selector === ".open-document, .save-document-as") return [openButton, saveAsButton];
       return [];
     },
@@ -121,9 +133,15 @@ function setup(android: boolean) {
     save: vi.fn(),
   };
   const store = new DocumentStore();
+  let saveStateListener: ((state: "dirty" | "error" | "saved" | "saving") => void) | null = null;
   const androidAutosave = {
     flush: vi.fn().mockResolvedValue(true),
     saveNow: vi.fn().mockResolvedValue(true),
+    subscribeSaveState: vi.fn((listener: typeof saveStateListener) => {
+      saveStateListener = listener;
+      listener?.("dirty");
+      return vi.fn();
+    }),
   };
   const controller = new DocumentController(
     store,
@@ -145,6 +163,9 @@ function setup(android: boolean) {
     saveAsButton,
     androidAutosave,
     recoveryDrafts,
+    saveDot,
+    documentStatus,
+    setSaveState: (state: "dirty" | "error" | "saved" | "saving") => saveStateListener?.(state),
     store,
   };
 }
@@ -206,6 +227,23 @@ describe("DocumentController et les fichiers Android", () => {
     expect(context.files.save).not.toHaveBeenCalled();
     expect(context.openButton.disabled).toBe(true);
     expect(context.saveAsButton.disabled).toBe(true);
+  });
+
+  it("reflète les quatre états de sauvegarde uniquement dans l’interface Android", async () => {
+    const context = setup(true);
+    await context.controller.initialize();
+
+    expect(context.saveDot.classList.contains("is-dirty")).toBe(true);
+    context.setSaveState("saving");
+    expect(context.saveDot.classList.contains("is-saving")).toBe(true);
+    expect(context.documentStatus.textContent).toBe("Sauvegarde automatique…");
+    context.setSaveState("saved");
+    expect(context.saveDot.classList.contains("is-saving")).toBe(false);
+    expect(context.saveDot.classList.contains("is-dirty")).toBe(false);
+    expect(context.documentStatus.textContent).toBe("Enregistré");
+    context.setSaveState("error");
+    expect(context.saveDot.classList.contains("is-error")).toBe(true);
+    expect(context.documentStatus.textContent).toBe("Sauvegarde automatique suspendue.");
   });
 
   it("ne restaure plus directement le brouillon dans DocumentStore sur Android", async () => {
