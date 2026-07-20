@@ -236,7 +236,7 @@ export function renderAppShell(): string {
         <button class="sidebar-export" data-export-open type="button" aria-label="Exporter le document" data-i18n-aria-label="export.document" title="Exporter le document" data-i18n-title="export.document">${icon("export")}<span data-i18n="export.document">Exporter le document</span></button>
         <div class="mobile-android-limitations" aria-live="polite">
           <p data-i18n="android.saveUnavailable">La sauvegarde de fichiers Android sera disponible dans une prochaine version.</p>
-          <p data-i18n="android.exportUnavailable">L’export PDF et DOCX sera disponible dans une prochaine version Android.</p>
+          <p data-i18n="android.exportInfo">Les copies DOCX exportées sont distinctes de la bibliothèque Plum3.</p>
         </div>
         <button class="sidebar-settings" data-settings-open type="button" aria-label="Paramètres" data-i18n-aria-label="nav.settings" title="Paramètres" data-i18n-title="nav.settings">${icon("settings")}<span data-i18n="nav.settings">Paramètres</span></button>
       </aside>

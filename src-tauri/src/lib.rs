@@ -1,5 +1,7 @@
 #[cfg(target_os = "android")]
 mod android_app;
+#[cfg(target_os = "android")]
+mod android_document_export;
 mod document_export;
 mod file_commands;
 pub mod library;
@@ -10,6 +12,8 @@ mod recent_documents;
 #[cfg(target_os = "android")]
 use android_app::close_android_app;
 use document_export::export_document;
+#[cfg(target_os = "android")]
+use document_export::share_exported_document;
 use file_commands::{
     choose_document_save_path, choose_document_to_open, list_recent_documents,
     open_recent_document, remove_recent_document, rename_document, save_document, AuthorizedPaths,
@@ -45,6 +49,7 @@ pub fn run() {
     #[cfg(target_os = "android")]
     let builder = builder
         .plugin(android_app::init())
+        .plugin(android_document_export::init())
         .plugin(markdown_share::init());
 
     builder
@@ -67,6 +72,8 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             export_document,
+            #[cfg(target_os = "android")]
+            share_exported_document,
             choose_document_to_open,
             list_recent_documents,
             remove_recent_document,

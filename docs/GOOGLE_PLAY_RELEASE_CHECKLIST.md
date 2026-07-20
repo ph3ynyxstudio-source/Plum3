@@ -1,7 +1,7 @@
 
 # Checklist de publication Google Play — Plum3
 
-Dernière vérification : **17 juillet 2026 à 17 h 53 (heure de Toronto)**
+Dernière vérification : **20 juillet 2026 à 9 h 41 (heure de Toronto)**
 
 Cette checklist concerne la future publication de **Plum3 Free** sur Google Play.
 Elle ne remplace pas les règles officielles de Google Play, qui peuvent évoluer.
@@ -41,20 +41,21 @@ Elle ne remplace pas les règles officielles de Google Play, qui peuvent évolue
 
 ## 1. Terminer le produit Android
 
-- [ ] Terminer et valider l’Étape 2 de la roadmap Android.
-- [ ] Retirer ou neutraliser toute action mobile qui appelle une fonction
+- [x] Terminer et valider l’Étape 2 de la roadmap Android.
+- [x] Retirer ou neutraliser toute action mobile qui appelle une fonction
   indisponible, notamment « Ouvrir un document ».
-- [ ] Implémenter la bibliothèque locale Android fiable.
+- [x] Implémenter la bibliothèque locale Android fiable.
 - [x] Vérifier l’autosauvegarde, le redémarrage et le passage en arrière-plan.
 - [x] Permettre le partage individuel d’un véritable fichier Markdown.
 - [x] Afficher clairement que la désinstallation supprime la bibliothèque
   privée locale.
-- [ ] Conserver PDF et DOCX désactivés tant qu’ils ne fonctionnent pas réellement.
+- [x] Conserver chaque format d’export désactivé tant qu’il ne fonctionne pas
+  réellement : DOCX est maintenant validé; PDF reste désactivé sur Android.
 - [ ] Ne mentionner dans la fiche Play Store aucune fonction encore absente.
 - [x] Tester Aube et Nuit sans zoom et sans chevauchement avec les barres système.
 - [x] Tester le bouton Retour Android dans chaque vue, tiroir, modale et mode
   concentration.
-- [ ] Tester l’application hors ligne.
+- [x] Tester l’application hors ligne.
 
 ### Audit Android et persistance actuelle — 17 juillet 2026
 
@@ -66,8 +67,9 @@ Elle ne remplace pas les règles officielles de Google Play, qui peuvent évolue
 - [x] Le brouillon unique actuel survit à un redémarrage complet du téléphone.
 - [x] Le brouillon unique actuel survit à l’installation d’un nouvel APK par-dessus
   la version existante, sans désinstallation.
-- [ ] Ces résultats ne valident pas encore la future bibliothèque multi-documents,
-  son autosauvegarde, ses migrations ni une mise à jour distribuée par Google Play.
+- [x] La bibliothèque multi-documents, son autosauvegarde et sa persistance ont été validées sur le Nothing Phone après arrêt forcé, redémarrage, mise à jour de sécurité Android et installation d’un nouvel APK par-dessus l’application existante.
+
+Limite restante : une mise à jour de Plum3 distribuée par Google Play devra encore être testée séparément.
 
 ### Partage Markdown natif — 17 juillet 2026
 
@@ -83,10 +85,49 @@ Elle ne remplace pas les règles officielles de Google Play, qui peuvent évolue
   parcours de partage Android déclenché et fichier
   `Brouillon récupéré - Scénario.md` vérifié dans le cache privé avec les
   113 lignes Markdown attendues.
-- [x] PDF et DOCX restent désactivés sur Android; le comportement Windows demeure
-  inchangé et couvert par les tests existants.
-- [ ] Tester encore l’envoi du fichier vers plusieurs applications compatibles
-  avant la publication.
+- [x] DOCX a été activé uniquement après validation native; PDF reste désactivé
+  sur Android. Le comportement Windows demeure inchangé et couvert par les tests.
+- [x] L’interface Android ne présente plus de bouton ni de message concernant
+  l’export PDF; elle décrit uniquement la copie DOCX disponible. Windows conserve
+  ses choix PDF et DOCX.
+- [x] Avec l’APK local/debug, le véritable fichier Markdown a été partagé vers
+  plusieurs applications compatibles sur le Nothing Phone.
+- [x] Les actions « Partager en Markdown » et « Exporter le document » sont
+  correctement alignées visuellement sur le Nothing Phone.
+
+### Export DOCX Android natif — 20 juillet 2026
+
+- [x] `docx-rs` génère la copie hors ligne dans le cache privé
+  `cache/document-exports/`.
+- [x] Le plugin Kotlin ouvre `ACTION_CREATE_DOCUMENT` avec le type MIME DOCX
+  officiel et copie le fichier vers l’emplacement choisi sans permission générale
+  de stockage.
+- [x] La copie temporaire est supprimée après réussite ou annulation; aucun fichier
+  résiduel n’a été trouvé dans `cache/document-exports/`.
+- [x] Validation sur le Nothing Phone A059 : `Scénario de test.docx` enregistré
+  dans Téléchargements, 29 221 octets, signature ZIP `504B`, 18 entrées et
+  `word/document.xml` présent.
+- [x] Après l’enregistrement, Plum3 indique que la copie est indépendante de la
+  bibliothèque et propose « Fermer » ou « Partager ».
+- [x] La feuille Android reçoit le véritable fichier DOCX avec son nom et propose
+  plusieurs applications compatibles.
+- [x] L’annulation par le bouton Retour revient dans Plum3 sans erreur fatale et
+  sans fichier temporaire résiduel.
+- [x] Le dernier APK a été installé avec `adb install -r`; les quatre documents
+  Markdown et l’index de la bibliothèque sont demeurés présents.
+- [x] Le DOCX exporté a été ouvert dans Google Docs sur mobile; sa mise en forme
+  a été confirmée visuellement comme lisible et fonctionnelle.
+- [x] Transfert complet d’un DOCX vers `Ph3yNyx-os` confirmé par l’utilisateur
+  après reconnexion de la destination Microsoft.
+- [x] La tentative de compilation ARM64 de `printpdf 0.9.1` échoue dans
+  `azul-core 0.0.7`; aucun autre moteur n’a été ajouté et PDF reste désactivé sur
+  Android.
+
+> Validation de bout en bout acquise avec l’APK local/debug sur le Nothing Phone :
+> génération DOCX, enregistrement par le sélecteur Android, ouverture dans Google
+> Docs, contrôle visuel, partage du véritable fichier, transfert vers
+> `Ph3yNyx-os`, annulation sans erreur, nettoyage des fichiers temporaires et
+> conservation des quatre documents après `adb install -r`.
 
 > Conclusion actualisée : l’Étape 2 est **validée**. « Ouvrir un document », les
 > documents récents et `Ctrl+O` sont neutralisés dans le code Android sans modifier
@@ -254,9 +295,9 @@ Ne pas placer le mot de passe ou le chemin privé réel dans cette checklist.
   limite.
 - [ ] Archiver l’AAB final, son SHA-256, sa version et son `versionCode`.
 
-Le dernier APK debug ARM64 du 17 juillet 2026 pèse `342 256 668` octets,
-soit environ `326,4 MiB`. Son SHA-256 est
-`8F8F753BA72DDD31D48FCACDD5D4F62EB10DE89B8691E3DCD767ADAFCE68712E`.
+Le dernier APK debug ARM64 du 20 juillet 2026 pèse `27 028 425` octets,
+soit environ `25,8 MiB`. Son SHA-256 est
+`0F12B816B2D78C64F0CCC6FB2EFA3BB5F823AC9C3A192E1B37499248931193C5`.
 Cette taille n’est pas représentative d’un AAB release optimisé, mais elle rend
 le contrôle de taille obligatoire avant publication.
 
@@ -337,15 +378,23 @@ npm run tauri -- android build --aab --target aarch64
 - [ ] Tester au minimum Android 7/API 24 et Android 16/API 36, physiquement ou
   sur émulateur.
 - [ ] Tester un appareil à faible mémoire.
-- [ ] Tester le démarrage à froid et après mise à jour.
-- [ ] Tester la conservation des documents pendant une mise à jour.
-  - Observation préliminaire : le brouillon local actuel a survécu à
-    l’installation d’un nouvel APK par-dessus la version existante sur le
-    Nothing Phone. Ce test devra être répété avec la bibliothèque finale et
-    une version distribuée par Google Play.
+- [ ] Répéter le démarrage à froid et la mise à jour avec une version distribuée
+  par Google Play.
+  - [x] Avec l’APK local/debug, Plum3 démarre sans erreur après mise à jour par
+    `adb install -r`.
+- [ ] Répéter avec une version distribuée par Google Play le test de conservation
+  des documents pendant une mise à jour.
+  - [x] Avec l’APK local/debug, les quatre documents Markdown et l’index de la
+    bibliothèque ont survécu aux installations par-dessus l’application existante
+    avec `adb install -r`.
 - [ ] Tester le comportement après refus d’une permission, s’il en reste.
-- [ ] Tester le partage Markdown vers plusieurs applications.
-- [ ] Tester l’application sans réseau.
+- [ ] Répéter le partage Markdown vers plusieurs applications avec une version
+  distribuée par Google Play.
+  - [x] Avec l’APK local/debug, le partage du véritable fichier Markdown vers
+    plusieurs applications compatibles est validé sur le Nothing Phone.
+- [ ] Répéter le fonctionnement sans réseau avec une version distribuée par
+  Google Play.
+  - [x] Le fonctionnement hors ligne est validé avec l’APK local/debug.
 - [ ] Tester la désinstallation et confirmer l’avertissement de perte des
   documents locaux.
 - [ ] Si requis pour le compte, lancer le test fermé avec 12 testeurs pendant
@@ -375,13 +424,11 @@ npm run tauri -- android build --aab --target aarch64
 > le type et la date du compte ainsi que l’adresse de soutien choisie sont
 > maintenant confirmés. Ils ne constituent plus des blocages.
 
-1. Bibliothèque locale Android à valider sur le Nothing Phone.
-2. Certaines actions Android restent indisponibles.
-3. Permission Internet à justifier ou retirer.
-4. Clé d’envoi et signature release non configurées.
-5. Aucun AAB release signé et testé.
-6. Taille réelle Play Store inconnue.
-7. Fiche, déclarations et piste de test Play Console non préparées.
+1. Permission Internet à justifier ou retirer.
+2. Clé d’envoi et signature release non configurées.
+3. Aucun AAB release signé et testé.
+4. Taille réelle Play Store inconnue.
+5. Fiche, déclarations et piste de test Play Console non préparées.
 
 ## Références officielles
 
