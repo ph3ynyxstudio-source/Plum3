@@ -45,14 +45,14 @@ Elle ne remplace pas les règles officielles de Google Play, qui peuvent évolue
 - [ ] Retirer ou neutraliser toute action mobile qui appelle une fonction
   indisponible, notamment « Ouvrir un document ».
 - [ ] Implémenter la bibliothèque locale Android fiable.
-- [ ] Vérifier l’autosauvegarde, le redémarrage et le passage en arrière-plan.
+- [x] Vérifier l’autosauvegarde, le redémarrage et le passage en arrière-plan.
 - [x] Permettre le partage individuel d’un véritable fichier Markdown.
-- [ ] Afficher clairement que la désinstallation supprime la bibliothèque
+- [x] Afficher clairement que la désinstallation supprime la bibliothèque
   privée locale.
 - [ ] Conserver PDF et DOCX désactivés tant qu’ils ne fonctionnent pas réellement.
 - [ ] Ne mentionner dans la fiche Play Store aucune fonction encore absente.
 - [x] Tester Aube et Nuit sans zoom et sans chevauchement avec les barres système.
-- [ ] Tester le bouton Retour Android dans chaque vue, tiroir, modale et mode
+- [x] Tester le bouton Retour Android dans chaque vue, tiroir, modale et mode
   concentration.
 - [ ] Tester l’application hors ligne.
 
