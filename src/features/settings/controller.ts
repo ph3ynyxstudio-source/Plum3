@@ -8,7 +8,7 @@ const STUDIO_URL = "https://ph3ynyx.dev/";
 const PRIVACY_URL = "https://ph3ynyx.dev/plum3/privacy/";
 const FEEDBACK_RECIPIENT = "phey.rainville@hotmail.com";
 
-export function buildFeedbackEmailUrl(version: string): string {
+export function buildFeedbackEmailUrl(version: string, platform: string): string {
   const subject = t("feedback.emailSubject", { version });
   const body = [
     t("feedback.emailType"),
@@ -23,7 +23,10 @@ export function buildFeedbackEmailUrl(version: string): string {
     t("feedback.emailAppVersion"),
     version,
     "",
-    t("feedback.emailWindowsVersion"),
+    t("feedback.emailPlatform"),
+    platform,
+    "",
+    t("feedback.emailSystemVersion"),
     "",
   ].join("\r\n");
 
@@ -38,6 +41,10 @@ export function buildSupportEmailUrl(version: string): string {
 interface AppInfo {
   os: string;
   arch: string;
+}
+
+function platformLabel(os: string): "Android" | "Windows" {
+  return os.toLowerCase() === "android" ? "Android" : "Windows";
 }
 
 export class SettingsController {
@@ -189,8 +196,10 @@ export class SettingsController {
   private async sendFeedback(): Promise<void> {
     try {
       const version = this.version === "—" ? await getVersion() : this.version;
+      const appInfo = await invoke<AppInfo>("get_app_info");
       this.version = version;
-      await openUrl(buildFeedbackEmailUrl(version));
+      this.appInfo = appInfo;
+      await openUrl(buildFeedbackEmailUrl(version, platformLabel(appInfo.os)));
     } catch {
       await this.dialog.showError(t("feedback.errorTitle"), t("feedback.errorMessage"));
     }

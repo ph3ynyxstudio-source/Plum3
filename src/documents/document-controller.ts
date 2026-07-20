@@ -143,7 +143,7 @@ export class DocumentController {
 
   async prepareForLibraryNavigation(): Promise<boolean> {
     if (this.store.current.path || !this.store.current.libraryDocumentId) {
-      return this.resolveUnsavedChanges(t("library.title"));
+      return this.resolveUnsavedChanges(t("dialog.openLibrary"));
     }
     return this.androidAutosave?.flush() ?? true;
   }

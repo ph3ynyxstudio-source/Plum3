@@ -38,4 +38,24 @@ describe("i18n", () => {
     expect(t("dialog.unsavedTitle")).toBe("Unsaved changes");
     expect(localStorage.getItem("plum3.locale.v1")).toBe("en");
   });
+
+  it("compose le dialogue non enregistré avec des actions verbales pour chaque destination", async () => {
+    const { setLocale, t } = await import("./i18n");
+    const name = "Publication réseau social.md";
+
+    expect(t("dialog.unsavedMessage", { name, action: t("dialog.openLibrary") })).toBe(
+      "Voulez-vous enregistrer « Publication réseau social.md » avant d’ouvrir la bibliothèque locale ?",
+    );
+    expect(t("dialog.unsavedMessage", { name, action: t("dialog.createFromTemplate") })).toBe(
+      "Voulez-vous enregistrer « Publication réseau social.md » avant de créer un document depuis un modèle ?",
+    );
+    expect(t("dialog.unsavedMessage", { name, action: t("dialog.openAnother") })).toBe(
+      "Voulez-vous enregistrer « Publication réseau social.md » avant d’ouvrir un autre document ?",
+    );
+
+    setLocale("en");
+    expect(t("dialog.unsavedMessage", { name, action: t("dialog.openLibrary") })).toBe(
+      "Do you want to save “Publication réseau social.md” before you open the local library?",
+    );
+  });
 });

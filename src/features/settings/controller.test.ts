@@ -87,26 +87,34 @@ describe("courriel de retour utilisateur", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     installFakeDocument();
-    mockedGetVersion.mockResolvedValue("0.1.0");
+    mockedGetVersion.mockResolvedValue("1.0.0");
     mockedGetTauriVersion.mockResolvedValue("2.0.0");
     mockedInvoke.mockResolvedValue({ os: "Windows", arch: "x86_64" });
     mockedOpenUrl.mockResolvedValue(undefined);
   });
 
   it.each([
-    ["fr", "Retour Plum3 — version 0.1.0", "Type de retour :", "Autre", "Version de Windows :"],
-    ["en", "Plum3 feedback — version 0.1.0", "Feedback type:", "Other", "Windows version:"],
-  ] as const)("construit un mailto complet et localisé en %s", (locale, subject, typeLabel, otherLabel, windowsLabel) => {
+    ["fr", "Retour Plum3 — version 1.0.0", "Type de retour :", "Autre", "Plateforme :", "Version du système :"],
+    ["en", "Plum3 feedback — version 1.0.0", "Feedback type:", "Other", "Platform:", "System version:"],
+  ] as const)("construit un mailto complet et localisé en %s", (locale, subject, typeLabel, otherLabel, platformLabel, systemLabel) => {
     setLocale(locale as Locale);
-    const result = parseFeedbackUrl(buildFeedbackEmailUrl("0.1.0"));
+    const result = parseFeedbackUrl(buildFeedbackEmailUrl("1.0.0", "Windows"));
 
     expect(result.recipient).toBe("phey.rainville@hotmail.com");
     expect(result.subject).toBe(subject);
     expect(result.body).toContain(`${typeLabel}\r\n`);
     expect(result.body).toContain(otherLabel);
-    expect(result.body).toContain("0.1.0");
-    expect(result.body.endsWith(`${windowsLabel}\r\n`)).toBe(true);
+    expect(result.body).toContain("1.0.0");
+    expect(result.body).toContain(`${platformLabel}\r\nWindows\r\n`);
+    expect(result.body.endsWith(`${systemLabel}\r\n`)).toBe(true);
     expect(result.body.toLowerCase()).not.toContain("attachment");
+  });
+
+  it.each(["Android", "Windows"] as const)("indique la plateforme réelle %s", (platform) => {
+    setLocale("fr");
+    const result = parseFeedbackUrl(buildFeedbackEmailUrl("1.0.0", platform));
+
+    expect(result.body).toContain(`Plateforme :\r\n${platform}\r\n`);
   });
 
   it("n’ouvre le client courriel qu’après un clic explicite", async () => {
@@ -118,6 +126,8 @@ describe("courriel de retour utilisateur", () => {
 
     await vi.waitFor(() => expect(mockedOpenUrl).toHaveBeenCalledTimes(1));
     expect(mockedOpenUrl.mock.calls[0]?.[0]).toContain("mailto:phey.rainville@hotmail.com?");
+    const openedUrl = mockedOpenUrl.mock.calls[0]?.[0];
+    expect(parseFeedbackUrl(openedUrl ? String(openedUrl) : "").body).toContain("Plateforme :\r\nWindows\r\n");
   });
 
   it("affiche une erreur localisée si le client courriel ne peut pas être ouvert", async () => {

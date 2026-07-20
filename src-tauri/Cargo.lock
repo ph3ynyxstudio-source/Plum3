@@ -3182,7 +3182,7 @@ dependencies = [
 
 [[package]]
 name = "plum3-de-nyx"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "docx-rs",
  "printpdf",

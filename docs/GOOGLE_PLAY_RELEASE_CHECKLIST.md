@@ -15,7 +15,7 @@ Elle ne remplace pas les règles officielles de Google Play, qui peuvent évolue
 
 - [x] Nom de l’application : `Plum3`.
 - [x] Identifiant Android : `os.ph3ynyx.plum3`.
-- [x] Version actuelle du projet : `0.1.0`.
+- [x] Version actuelle du projet : `1.0.0`.
 - [x] `minSdk = 24` — Android 7.0 minimum.
 - [x] `compileSdk = 36`.
 - [x] `targetSdk = 36`.
