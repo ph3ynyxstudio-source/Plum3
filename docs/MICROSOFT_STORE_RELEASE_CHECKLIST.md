@@ -79,7 +79,7 @@
 ### Validé
 
 - Version canonique `0.1.0` cohérente entre npm et Cargo (`npm run version:check`).
-- Icône officielle `assets/favicon-plume3.png` carrée, RGBA et transparente; `src-tauri/icons/icon.ico` contient les sept résolutions attendues en 32 bits.
+- Source officielle `assets/favicon-plum3.webp` carrée et transparente; `src-tauri/icons/icon.ico` est régénéré depuis ce WebP avec sept résolutions Windows, et `src-tauri/icons/icon.png` fournit à `window.set_icon` la même image dans le format décodé par Tauri à l’exécution.
 - MSI x64 standard généré : `src-tauri/target/release/bundle/msi/Plum3_0.1.0_x64_en-US.msi`.
 - Frontend : lint, typage, 8 tests et build de production réussis; `npm audit --omit=dev` ne signale aucune vulnérabilité.
 - Rust : formatage conforme, Clippy sans avertissement et 14 tests réussis.

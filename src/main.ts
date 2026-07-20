@@ -73,7 +73,15 @@ new SettingsController(appDialog).initialize();
 const documentStore = new DocumentStore();
 const fileService = new FileService();
 const recoveryDrafts = new RecoveryDraftService();
-const androidLibraryAutosave = new AndroidLibraryAutosaveController(documentStore);
+const libraryEnabled = true;
+const androidLibraryAutosave = new AndroidLibraryAutosaveController(
+  documentStore,
+  undefined,
+  libraryEnabled,
+  document,
+  android,
+  android,
+);
 const markdownShare = new MarkdownShareController(documentStore, appDialog);
 const documentController = new DocumentController(
   documentStore,
@@ -83,17 +91,27 @@ const documentController = new DocumentController(
   recoveryDrafts,
   android,
   androidLibraryAutosave,
+  libraryEnabled,
 );
 void documentController.initialize();
 new AutosaveController(documentStore, documentController, recoveryDrafts).initialize();
 const mobileLibrary = new MobileLibraryController(
   documentStore,
-  androidLibraryAutosave,
+  { flush: () => documentController.prepareForLibraryNavigation() },
   appDialog,
   markdownShare,
+  undefined,
+  libraryEnabled,
+  document,
+  android,
 );
 void (async () => {
-  await new RecoveryDraftMigrationController(recoveryDrafts).initialize();
+  await new RecoveryDraftMigrationController(
+    recoveryDrafts,
+    undefined,
+    undefined,
+    libraryEnabled,
+  ).initialize();
   await androidLibraryAutosave.initialize();
   await mobileLibrary.initialize();
 })();

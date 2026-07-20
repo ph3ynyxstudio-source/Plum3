@@ -37,6 +37,8 @@ export class DocumentController {
   private closing = false;
   private recentActivePath: string | null | undefined;
   private androidSaveState: AndroidSaveState = "dirty";
+  private fileSaving = false;
+  private readonly libraryEnabled: boolean;
 
   constructor(
     private readonly store: DocumentStore,
@@ -46,11 +48,14 @@ export class DocumentController {
     private readonly recoveryDrafts: RecoveryDraftService,
     private readonly android = isAndroid(),
     private readonly androidAutosave: AndroidDocumentAutosave | null = null,
-  ) {}
+    libraryEnabled?: boolean,
+  ) {
+    this.libraryEnabled = libraryEnabled ?? android;
+  }
 
   async initialize(): Promise<void> {
     this.bindActions();
-    if (this.android) {
+    if (this.libraryEnabled) {
       this.androidAutosave?.subscribeSaveState?.((state) => {
         this.androidSaveState = state;
         this.render();
@@ -62,7 +67,7 @@ export class DocumentController {
       });
       this.recentDocuments.replaceChildren();
     }
-    if (!this.android) {
+    if (!this.libraryEnabled) {
       const recoveryDraft = this.recoveryDrafts.load();
       if (recoveryDraft) {
         this.store.restoreDraft(
@@ -136,6 +141,13 @@ export class DocumentController {
     );
   }
 
+  async prepareForLibraryNavigation(): Promise<boolean> {
+    if (this.store.current.path || !this.store.current.libraryDocumentId) {
+      return this.resolveUnsavedChanges(t("library.title"));
+    }
+    return this.androidAutosave?.flush() ?? true;
+  }
+
   private bindActions(): void {
     this.editor.addEventListener("input", () => this.store.updateContent(this.editor.value));
 
@@ -202,7 +214,7 @@ export class DocumentController {
     if (this.busy) return;
     const selection = await this.templates.show(initialTemplateId);
     if (!selection) return;
-    if (this.android) {
+    if (this.libraryEnabled && !this.store.current.path) {
       if (this.androidAutosave && !(await this.androidAutosave.flush())) return;
     } else if (!(await this.resolveUnsavedChanges(t("dialog.createFromTemplate")))) {
       return;
@@ -248,19 +260,14 @@ export class DocumentController {
   }
 
   private async saveCurrentDocument(): Promise<boolean> {
-    if (this.android) {
-      if (this.busy) return false;
-      if (!this.androidAutosave) return this.showAndroidSaveUnavailable();
-      return this.runBusy(async () => {
-        const saved = await this.androidAutosave!.saveNow();
-        if (!saved) {
-          await this.dialog.showError(t("error.saveFailed"), t("library.saveFailed"));
-        }
-        return saved;
-      });
+    const document = this.store.current;
+    if (this.android || document.libraryDocumentId) {
+      return this.saveCurrentDocumentToLibrary();
+    }
+    if (this.libraryEnabled && !document.path) {
+      return this.chooseWindowsSaveDestination();
     }
     if (this.busy) return false;
-    const document = this.store.current;
     if (!document.path) return this.saveCurrentDocumentAs();
 
     return this.runBusy(async () =>
@@ -270,6 +277,33 @@ export class DocumentController {
         false,
       ),
     );
+  }
+
+  private async chooseWindowsSaveDestination(): Promise<boolean> {
+    const action = await this.dialog.show({
+      title: t("library.saveDestinationTitle"),
+      message: t("library.saveDestinationMessage"),
+      actions: [
+        { id: "cancel", label: t("common.cancel") },
+        { id: "library", label: t("library.saveToLibrary"), tone: "primary" },
+        { id: "explorer", label: t("library.saveToExplorer") },
+      ],
+    });
+    if (action === "library") return this.saveCurrentDocumentToLibrary();
+    if (action === "explorer") return this.saveCurrentDocumentAs();
+    return false;
+  }
+
+  private async saveCurrentDocumentToLibrary(): Promise<boolean> {
+    if (this.busy) return false;
+    if (!this.androidAutosave) return this.showAndroidSaveUnavailable();
+    return this.runBusy(async () => {
+      const saved = await this.androidAutosave!.saveNow();
+      if (!saved) {
+        await this.dialog.showError(t("error.saveFailed"), t("library.saveFailed"));
+      }
+      return saved;
+    });
   }
 
   private async saveCurrentDocumentAs(): Promise<boolean> {
@@ -308,6 +342,8 @@ export class DocumentController {
     expectedVersion: FileVersion | null,
     allowOverwrite: boolean,
   ): Promise<boolean> {
+    this.fileSaving = true;
+    this.render();
     try {
       const result = await this.files.save({
         path: target.path,
@@ -338,6 +374,9 @@ export class DocumentController {
 
       await this.showFileError(t("error.saveFailed"), cause);
       return false;
+    } finally {
+      this.fileSaving = false;
+      this.render();
     }
   }
 
@@ -385,12 +424,13 @@ export class DocumentController {
   private render(): void {
     const state = this.store.current;
     const dirty = this.store.isDirty;
+    const usesLibraryState = this.libraryEnabled && !state.path;
 
     if (this.editor.value !== state.content) this.editor.value = state.content;
     this.title.textContent = displayDocumentName(state.name);
     this.title.title = state.path ?? "Document non enregistré";
-    const isUnsaved = this.android ? !state.libraryDocumentId : !state.path;
-    this.documentStatus.textContent = this.android
+    const isUnsaved = usesLibraryState ? !state.libraryDocumentId : !state.path;
+    this.documentStatus.textContent = usesLibraryState
       ? this.androidSaveState === "saving"
         ? t("autosave.saving")
         : this.androidSaveState === "saved"
@@ -398,20 +438,24 @@ export class DocumentController {
           : this.androidSaveState === "error"
             ? t("autosave.paused")
             : t("editor.modified")
-      : dirty
+      : this.fileSaving
+        ? t("autosave.saving")
+        : dirty
         ? t("editor.modified")
         : isUnsaved
           ? t("editor.newDocument")
           : t("editor.saved");
     this.saveDots.forEach((dot) => {
-      if (this.android) {
+      if (usesLibraryState) {
         dot.classList.toggle("is-dirty", this.androidSaveState === "dirty");
         dot.classList.toggle("is-error", this.androidSaveState === "error");
         dot.classList.toggle("is-saving", this.androidSaveState === "saving");
         dot.classList.toggle("is-unsaved", false);
       } else {
-        dot.classList.toggle("is-dirty", dirty);
-        dot.classList.toggle("is-unsaved", isUnsaved && !dirty);
+        dot.classList.toggle("is-dirty", dirty && !this.fileSaving);
+        dot.classList.toggle("is-error", false);
+        dot.classList.toggle("is-saving", this.fileSaving);
+        dot.classList.toggle("is-unsaved", isUnsaved && !dirty && !this.fileSaving);
       }
     });
     if (state.lastSavedAt) {

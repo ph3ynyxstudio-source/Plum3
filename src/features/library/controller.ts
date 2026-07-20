@@ -106,8 +106,9 @@ export class MobileLibraryController {
     private readonly dialog: AppDialog,
     private readonly markdownShare: LibraryMarkdownShare,
     private readonly gateway: LibraryGateway = tauriGateway,
-    private readonly android = isAndroid(),
+    private readonly enabled = isAndroid(),
     root: ParentNode = document,
+    private readonly shareEnabled = this.enabled,
   ) {
     this.shell = root.querySelector<HTMLElement>(".app-shell");
     this.quickList = root.querySelector<HTMLElement>("[data-library-quick-list]");
@@ -118,7 +119,7 @@ export class MobileLibraryController {
   }
 
   async initialize(): Promise<void> {
-    if (!this.android) return;
+    if (!this.enabled) return;
     this.bind();
     await this.refresh();
     this.navigate(this.store.current.libraryDocumentId ? "editor" : "library");
@@ -126,7 +127,7 @@ export class MobileLibraryController {
   }
 
   async showLibrary(): Promise<boolean> {
-    if (!this.android || !(await this.autosave.flush())) return false;
+    if (!this.enabled || !(await this.autosave.flush())) return false;
     await this.refresh();
     this.navigate("library");
     return true;
@@ -384,11 +385,11 @@ export class MobileLibraryController {
     const menu = documentElement("div", "library-document-menu");
     menu.dataset.libraryMenu = "";
     menu.hidden = true;
-    menu.append(
-      this.createMenuAction("rename", documentId, t("library.rename")),
-      this.createMenuAction("share", documentId, t("share.markdown")),
-      this.createMenuAction("delete", documentId, t("library.delete"), true),
-    );
+    menu.append(this.createMenuAction("rename", documentId, t("library.rename")));
+    if (this.shareEnabled) {
+      menu.append(this.createMenuAction("share", documentId, t("share.markdown")));
+    }
+    menu.append(this.createMenuAction("delete", documentId, t("library.delete"), true));
     container.append(toggle, menu);
     return container;
   }

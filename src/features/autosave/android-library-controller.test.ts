@@ -17,7 +17,12 @@ const documentMeta: LibraryDocument = {
   lastOpenedAt: null,
 };
 
-function setup(activeContent: string | null = null, android = true) {
+function setup(
+  activeContent: string | null = null,
+  enabled = true,
+  persistExternalFiles = enabled,
+  createUnsavedDocuments = enabled,
+) {
   const status = { textContent: "" };
   const visibilityListeners: Array<() => void> = [];
   vi.stubGlobal("document", {
@@ -47,8 +52,10 @@ function setup(activeContent: string | null = null, android = true) {
   const controller = new AndroidLibraryAutosaveController(
     store,
     gateway,
-    android,
+    enabled,
     root,
+    persistExternalFiles,
+    createUnsavedDocuments,
   );
   return { controller, gateway, status, store, visibilityListeners };
 }
@@ -62,6 +69,42 @@ describe("AndroidLibraryAutosaveController", () => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
+  });
+
+  it("ne copie pas automatiquement un fichier Windows externe dans la bibliothèque", async () => {
+    const { controller, gateway, store } = setup(null, true, false);
+    store.load({
+      name: "Externe.md",
+      path: "C:/Documents/Externe.md",
+      content: "version disque",
+      version: { modifiedMillis: 1, size: 14, fingerprint: "abc" },
+    });
+    await controller.initialize();
+
+    store.updateContent("modification non enregistrée");
+    await vi.advanceTimersByTimeAsync(2_000);
+
+    expect(gateway.create).not.toHaveBeenCalled();
+    expect(gateway.save).not.toHaveBeenCalled();
+    expect(store.isDirty).toBe(true);
+  });
+
+  it("attend le premier choix Windows avant de créer un document dans la bibliothèque", async () => {
+    const { controller, gateway, store } = setup(null, true, false, false);
+    await controller.initialize();
+    store.createFromTemplate("Nouveau.md", "# Nouveau");
+
+    await vi.advanceTimersByTimeAsync(2_000);
+
+    expect(gateway.create).not.toHaveBeenCalled();
+    expect(store.isDirty).toBe(true);
+
+    await expect(controller.saveNow()).resolves.toBe(true);
+    expect(gateway.create).toHaveBeenCalledWith({
+      title: "Nouveau.md",
+      content: "# Nouveau",
+      templateType: null,
+    });
   });
 
   it("sauvegarde une modification après deux secondes sans frappe", async () => {

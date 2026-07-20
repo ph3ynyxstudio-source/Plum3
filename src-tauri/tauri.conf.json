@@ -27,6 +27,6 @@
     "active": true,
     "targets": ["msi"],
     "publisher": "Ph3yNyx.studio",
-    "icon": ["icons/icon.ico", "../assets/favicon-plume3.png"]
+    "icon": ["icons/icon.ico"]
   }
 }

@@ -149,6 +149,7 @@ export class DocumentStore {
     this.state = {
       ...this.state,
       ...result,
+      libraryDocumentId: null,
       savedContent: this.state.content,
       lastSavedAt: new Date(result.version.modifiedMillis),
     };

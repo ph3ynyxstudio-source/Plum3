@@ -71,7 +71,7 @@ class FakeElement {
   removeAttribute(): void {}
 }
 
-function setup(android: boolean) {
+function setup(android: boolean, libraryEnabled = android) {
   const editor = new FakeElement();
   const recentDocuments = new FakeElement();
   const openButton = new FakeElement();
@@ -151,6 +151,7 @@ function setup(android: boolean) {
     recoveryDrafts as unknown as RecoveryDraftService,
     android,
     androidAutosave,
+    libraryEnabled,
   );
   (controller as unknown as { bindActions(): void }).bindActions();
   return {
@@ -227,6 +228,7 @@ describe("DocumentController et les fichiers Android", () => {
     expect(context.files.save).not.toHaveBeenCalled();
     expect(context.openButton.disabled).toBe(true);
     expect(context.saveAsButton.disabled).toBe(true);
+    expect(context.dialog.show).not.toHaveBeenCalled();
   });
 
   it("reflète les quatre états de sauvegarde uniquement dans l’interface Android", async () => {
@@ -273,5 +275,108 @@ describe("DocumentController et les fichiers Android", () => {
     expect(context.recoveryDrafts.load).toHaveBeenCalledOnce();
     expect(context.store.current.name).toBe("Brouillon récupéré - Windows.md");
     expect(context.store.current.content).toBe("contenu récupéré");
+  });
+
+  it("confie la restauration à la bibliothèque lorsque celle-ci est activée sur Windows", async () => {
+    const context = setup(false, true);
+    context.recoveryDrafts.load.mockReturnValue({
+      name: "Windows.md",
+      content: "contenu à migrer",
+      savedAt: "2026-07-17T18:59:00.000Z",
+    });
+
+    await context.controller.initialize();
+
+    expect(context.recoveryDrafts.load).not.toHaveBeenCalled();
+    expect(context.store.current.content).toBe("");
+  });
+
+  it("enregistre un document de bibliothèque sous Windows sans désactiver les fichiers externes", async () => {
+    const context = setup(false, true);
+    context.dialog.show.mockResolvedValueOnce("library");
+
+    context.saveButton.click();
+
+    await vi.waitFor(() => expect(context.androidAutosave.saveNow).toHaveBeenCalledOnce());
+    await vi.waitFor(() => expect(context.openButton.disabled).toBe(false));
+    expect(context.files.save).not.toHaveBeenCalled();
+    expect(context.saveAsButton.disabled).toBe(false);
+  });
+
+  it("propose la bibliothèque ou l’Explorateur au premier enregistrement Windows", async () => {
+    const context = setup(false, true);
+    context.dialog.show.mockResolvedValueOnce("library");
+    context.store.updateContent("Premier contenu");
+
+    context.saveButton.click();
+
+    await vi.waitFor(() => expect(context.dialog.show).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "Choisir où enregistrer",
+        actions: expect.arrayContaining([
+          expect.objectContaining({ id: "library", label: "Bibliothèque Plum3" }),
+          expect.objectContaining({ id: "explorer", label: "Explorateur Windows" }),
+        ]),
+      }),
+    ));
+    await vi.waitFor(() => expect(context.androidAutosave.saveNow).toHaveBeenCalledOnce());
+    expect(context.files.chooseSavePath).not.toHaveBeenCalled();
+  });
+
+  it("enregistre dans un fichier distinct lorsque l’Explorateur est choisi sous Windows", async () => {
+    const context = setup(false, true);
+    context.dialog.show.mockResolvedValueOnce("explorer");
+    context.files.chooseSavePath.mockResolvedValue({
+      path: "C:/Documents/Plum3.md",
+      name: "Plum3.md",
+      exists: false,
+    });
+    context.files.save.mockResolvedValue({
+      path: "C:/Documents/Plum3.md",
+      name: "Plum3.md",
+      version: { modifiedMillis: 2, size: 7, fingerprint: "saved" },
+    });
+    context.store.updateContent("Contenu");
+
+    context.saveButton.click();
+
+    await vi.waitFor(() => expect(context.files.chooseSavePath).toHaveBeenCalledOnce());
+    await vi.waitFor(() => expect(context.files.save).toHaveBeenCalledOnce());
+    expect(context.androidAutosave.saveNow).not.toHaveBeenCalled();
+    expect(context.store.current.path).toBe("C:/Documents/Plum3.md");
+  });
+
+  it("affiche rouge, orange puis vert pendant une sauvegarde Windows", async () => {
+    const context = setup(false, true);
+    let finishSave: ((result: {
+      path: string;
+      name: string;
+      version: { modifiedMillis: number; size: number; fingerprint: string };
+    }) => void) | undefined;
+    context.files.save.mockImplementation(() => new Promise((resolve) => {
+      finishSave = resolve;
+    }));
+    context.store.load({
+      path: "C:/Documents/Plum3.md",
+      name: "Plum3.md",
+      content: "Avant",
+      version: { modifiedMillis: 1, size: 5, fingerprint: "before" },
+    });
+    context.store.updateContent("Après");
+    await context.controller.initialize();
+
+    expect(context.saveDot.classList.contains("is-dirty")).toBe(true);
+    context.saveButton.click();
+    await vi.waitFor(() => expect(context.saveDot.classList.contains("is-saving")).toBe(true));
+    expect(context.saveDot.classList.contains("is-dirty")).toBe(false);
+
+    finishSave?.({
+      path: "C:/Documents/Plum3.md",
+      name: "Plum3.md",
+      version: { modifiedMillis: 2, size: 5, fingerprint: "after" },
+    });
+    await vi.waitFor(() => expect(context.saveDot.classList.contains("is-saving")).toBe(false));
+    expect(context.saveDot.classList.contains("is-dirty")).toBe(false);
+    expect(context.documentStatus.textContent).toBe("Enregistré");
   });
 });

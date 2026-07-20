@@ -14,7 +14,6 @@ use file_commands::{
     choose_document_save_path, choose_document_to_open, list_recent_documents,
     open_recent_document, remove_recent_document, rename_document, save_document, AuthorizedPaths,
 };
-#[cfg(target_os = "android")]
 use library::{
     create_library_document, delete_library_document, list_library_documents,
     load_active_library_document, migrate_recovery_draft, open_library_document,
@@ -52,17 +51,13 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .manage(AuthorizedPaths::default())
         .setup(|app| {
-            #[cfg(target_os = "android")]
-            {
-                let app_data_root = app.path().app_data_dir()?;
-                app.manage(LibraryRepository::new(app_data_root));
-            }
+            let app_data_root = app.path().app_data_dir()?;
+            app.manage(LibraryRepository::new(app_data_root));
             #[cfg(not(any(target_os = "android", target_os = "ios")))]
             {
                 if let Some(window) = app.get_webview_window("main") {
-                    let icon = tauri::image::Image::from_bytes(include_bytes!(
-                        "../../assets/favicon-plume3.png"
-                    ))?;
+                    let icon =
+                        tauri::image::Image::from_bytes(include_bytes!("../icons/icon.png"))?;
                     window.set_icon(icon)?;
                 }
             }
@@ -81,25 +76,15 @@ pub fn run() {
             rename_document,
             #[cfg(target_os = "android")]
             share_markdown_document,
-            #[cfg(target_os = "android")]
             migrate_recovery_draft,
-            #[cfg(target_os = "android")]
             verify_recovery_draft_migration,
-            #[cfg(target_os = "android")]
             load_active_library_document,
-            #[cfg(target_os = "android")]
             create_library_document,
-            #[cfg(target_os = "android")]
             save_library_document,
-            #[cfg(target_os = "android")]
             list_library_documents,
-            #[cfg(target_os = "android")]
             open_library_document,
-            #[cfg(target_os = "android")]
             read_library_document,
-            #[cfg(target_os = "android")]
             rename_library_document,
-            #[cfg(target_os = "android")]
             delete_library_document,
             #[cfg(target_os = "android")]
             close_android_app,

@@ -36,6 +36,7 @@ const tauriGateway: AndroidLibraryGateway = {
 interface SaveSnapshot {
   libraryDocumentId: string | null;
   name: string;
+  path: string | null;
   content: string;
   savedContent: string;
 }
@@ -53,14 +54,16 @@ export class AndroidLibraryAutosaveController {
   constructor(
     private readonly store: DocumentStore,
     private readonly gateway: AndroidLibraryGateway = tauriGateway,
-    private readonly android = isAndroid(),
+    private readonly enabled = isAndroid(),
     root: ParentNode = document,
+    private readonly persistExternalFiles = isAndroid(),
+    private readonly createUnsavedDocuments = isAndroid(),
   ) {
     this.status = root.querySelector<HTMLElement>("[data-autosave-status]");
   }
 
   async initialize(): Promise<void> {
-    if (!this.android || this.initialized) return;
+    if (!this.enabled || this.initialized) return;
     this.initialized = true;
     let loadFailed = false;
     try {
@@ -99,9 +102,10 @@ export class AndroidLibraryAutosaveController {
   }
 
   async flush(): Promise<boolean> {
-    if (!this.android) return true;
+    if (!this.enabled) return true;
     this.cancelTimer();
     const snapshot = this.snapshot(this.store.current);
+    if (!this.shouldPersist(snapshot)) return true;
     if (snapshot.content !== snapshot.savedContent) {
       this.enqueue(snapshot);
     }
@@ -109,9 +113,11 @@ export class AndroidLibraryAutosaveController {
   }
 
   async saveNow(): Promise<boolean> {
-    if (!this.android) return false;
+    if (!this.enabled) return false;
     this.cancelTimer();
-    this.enqueue(this.snapshot(this.store.current), true);
+    const snapshot = this.snapshot(this.store.current);
+    if (!this.shouldPersist(snapshot, true)) return false;
+    this.enqueue(snapshot, true);
     return this.queue;
   }
 
@@ -121,22 +127,28 @@ export class AndroidLibraryAutosaveController {
       this.previous = current;
       return;
     }
-    if (current.content !== current.savedContent || !current.libraryDocumentId) {
-      this.setSaveState("dirty");
-    }
     if (
       this.previous &&
       this.previous.libraryDocumentId !== current.libraryDocumentId &&
-      this.previous.content !== this.previous.savedContent
+      this.previous.content !== this.previous.savedContent &&
+      this.shouldPersist(this.previous)
     ) {
       this.enqueue(this.previous);
     }
     this.previous = current;
+    if (!this.shouldPersist(current)) {
+      this.cancelTimer();
+      return;
+    }
+    if (current.content !== current.savedContent || !current.libraryDocumentId) {
+      this.setSaveState("dirty");
+    }
     this.schedule();
   }
 
   private schedule(): void {
     this.cancelTimer();
+    if (!this.shouldPersist(this.snapshot(this.store.current))) return;
     if (!this.store.isDirty) return;
     this.timer = window.setTimeout(() => {
       this.timer = null;
@@ -151,6 +163,7 @@ export class AndroidLibraryAutosaveController {
   }
 
   private async persist(snapshot: SaveSnapshot, force = false): Promise<boolean> {
+    if (!this.shouldPersist(snapshot, force)) return true;
     if (!force && snapshot.content === snapshot.savedContent) return true;
     this.setStatus("autosave.saving");
     this.setSaveState("saving");
@@ -202,9 +215,16 @@ export class AndroidLibraryAutosaveController {
     return {
       libraryDocumentId: state.libraryDocumentId,
       name: state.name,
+      path: state.path,
       content: state.content,
       savedContent: state.savedContent,
     };
+  }
+
+  private shouldPersist(snapshot: SaveSnapshot, allowCreate = false): boolean {
+    if (snapshot.path !== null) return this.persistExternalFiles;
+    if (snapshot.libraryDocumentId !== null) return true;
+    return this.createUnsavedDocuments || allowCreate;
   }
 
   private cancelTimer(): void {

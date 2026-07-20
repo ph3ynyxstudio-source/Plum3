@@ -74,7 +74,7 @@ export class DocumentRenameController {
     }
     if (name === previous.name) { this.cancel(); return; }
 
-    if (this.android && previous.libraryDocumentId) {
+    if (previous.libraryDocumentId) {
       try {
         this.store.markLibraryRenamed(await this.renameLibrary(previous.libraryDocumentId, name));
         document.dispatchEvent(new CustomEvent("plum3:library-updated"));

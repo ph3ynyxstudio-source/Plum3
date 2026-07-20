@@ -106,7 +106,7 @@ function renderMobileLibraryView(): string {
           <button data-library-new type="button" data-i18n="nav.new">Nouveau document</button>
         </section>
         <p class="library-no-results" data-library-no-results data-i18n="library.noResults" hidden>Aucun document ne correspond à cette recherche.</p>
-        <aside class="library-local-note">${icon("folder")}<p><span data-i18n="library.localInfo">Vos documents sont stockés localement sur cet appareil.</span><br /><span data-i18n="library.uninstallInfo">Ils seront supprimés si Plum3 est désinstallé.</span></p></aside>
+        <aside class="library-local-note">${icon("folder")}<p><span class="library-storage-info library-storage-info-android"><span data-i18n="library.localInfo">Vos documents sont stockés localement sur cet appareil.</span><br /><span data-i18n="library.uninstallInfo">Ils seront supprimés si Plum3 est désinstallé.</span></span><span class="library-storage-info library-storage-info-windows" data-i18n="library.windowsStorageInfo">La bibliothèque Plum3 et l’Explorateur Windows sont deux emplacements séparés. Une sauvegarde dans l’un ne met pas automatiquement l’autre à jour.</span></p></aside>
       </div>
     </section>`;
 }

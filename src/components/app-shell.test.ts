@@ -58,4 +58,14 @@ describe("actions de la colonne gauche", () => {
     expect(shell).toContain('class="mobile-panel-scrim"');
     expect(shell.match(/data-i18n="writing.title"/g)?.length).toBe(2);
   });
+
+  it("sépare les explications de stockage Android et Windows", () => {
+    const shell = renderAppShell();
+
+    expect(shell).toContain('class="library-storage-info library-storage-info-android"');
+    expect(shell).toContain('data-i18n="library.localInfo"');
+    expect(shell).toContain('data-i18n="library.uninstallInfo"');
+    expect(shell).toContain('class="library-storage-info library-storage-info-windows"');
+    expect(shell).toContain('data-i18n="library.windowsStorageInfo"');
+  });
 });
