@@ -10,6 +10,8 @@ type ExportFontKind = "serif" | "sans" | "mono";
 interface ExportResult {
   path: string;
   name: string;
+  exportId?: string;
+  mimeType?: string;
 }
 
 interface ExportRequest {
@@ -26,8 +28,13 @@ interface ExportRequest {
 }
 
 export type ExportInvoker = (request: ExportRequest) => Promise<ExportResult | null>;
+export type ExportShareInvoker = (exportId: string, chooserTitle: string) => Promise<void>;
 
 const invokeExport: ExportInvoker = (request) => invoke<ExportResult | null>("export_document", { request });
+const invokeExportShare: ExportShareInvoker = (exportId, chooserTitle) =>
+  invoke<void>("share_exported_document", {
+    request: { exportId, chooserTitle },
+  });
 
 function errorCode(cause: unknown): string | null {
   if (typeof cause === "object" && cause !== null && "code" in cause) {
@@ -51,6 +58,8 @@ export function exportErrorMessage(cause: unknown): string {
       return t("export.pdfFailed");
     case "docx_generation_error":
       return t("export.docxFailed");
+    case "export_share_error":
+      return t("export.shareFailedMessage");
     default:
       return t("error.unexpected");
   }
@@ -71,16 +80,21 @@ export class DocumentExportController {
     private readonly dialog: AppDialog,
     private readonly invokeDocumentExport: ExportInvoker = invokeExport,
     private readonly android = isAndroid(),
+    private readonly invokeShareExport: ExportShareInvoker = invokeExportShare,
   ) {}
 
   initialize(): void {
     if (this.android) {
-      this.buttons.forEach((button) => { button.disabled = true; });
-      this.menuButton.disabled = true;
-      this.status.textContent = t("android.exportUnavailable");
-      return;
+      this.buttons
+        .filter((button) => button.dataset.exportFormat === "pdf")
+        .forEach((button) => {
+          button.disabled = true;
+          button.hidden = true;
+        });
+      this.status.textContent = t("android.exportInfo");
     }
     this.buttons.forEach((button) => {
+      if (this.android && button.dataset.exportFormat === "pdf") return;
       button.addEventListener("click", () => {
         void this.export(button.dataset.exportFormat as ExportFormat);
       });
@@ -92,13 +106,18 @@ export class DocumentExportController {
 
   private async chooseFormat(): Promise<void> {
     if (this.busy) return;
+    const formatActions = this.android
+      ? [{ id: "docx", label: t("export.asDocx"), tone: "primary" as const }]
+      : [
+          { id: "pdf", label: t("export.asPdf"), tone: "primary" as const },
+          { id: "docx", label: t("export.asDocx"), tone: "primary" as const },
+        ];
     const action = await this.dialog.show({
       title: t("export.title"),
       message: t("export.chooseFormat"),
       actions: [
         { id: "cancel", label: t("common.cancel") },
-        { id: "pdf", label: t("export.asPdf"), tone: "primary" },
-        { id: "docx", label: t("export.asDocx"), tone: "primary" },
+        ...formatActions,
       ],
     });
     if (action === "pdf" || action === "docx") await this.export(action);
@@ -122,12 +141,9 @@ export class DocumentExportController {
         ? t("export.created", { name: result.name })
         : t("export.cancelled");
       if (result) {
-        this.status.title = result.path;
-        await this.dialog.show({
-          title: t("export.createdTitle"),
-          message: t("export.created", { name: result.name }),
-          actions: [{ id: "ok", label: t("common.understood"), tone: "primary" }],
-        });
+        if (result.path) this.status.title = result.path;
+        else this.status.removeAttribute("title");
+        await this.showCompletion(result);
       } else {
         this.status.removeAttribute("title");
       }
@@ -137,6 +153,32 @@ export class DocumentExportController {
       await this.dialog.showError(t("export.failed"), exportErrorMessage(cause));
     } finally {
       this.setBusy(false);
+    }
+  }
+
+  private async showCompletion(result: ExportResult): Promise<void> {
+    if (!this.android || !result.exportId) {
+      await this.dialog.show({
+        title: t("export.createdTitle"),
+        message: t("export.created", { name: result.name }),
+        actions: [{ id: "ok", label: t("common.understood"), tone: "primary" }],
+      });
+      return;
+    }
+
+    const action = await this.dialog.show({
+      title: t("export.createdTitle"),
+      message: `${t("export.created", { name: result.name })}\n\n${t("export.savedIndependent")}`,
+      actions: [
+        { id: "close", label: t("common.close") },
+        { id: "share", label: t("export.share"), tone: "primary" },
+      ],
+    });
+    if (action !== "share") return;
+    try {
+      await this.invokeShareExport(result.exportId, t("export.shareChooserTitle"));
+    } catch {
+      await this.dialog.showError(t("export.shareFailed"), t("export.shareFailedMessage"));
     }
   }
 
@@ -175,7 +217,8 @@ export class DocumentExportController {
   private setBusy(busy: boolean): void {
     this.busy = busy;
     this.buttons.forEach((button) => {
-      button.disabled = busy;
+      button.disabled =
+        busy || (this.android && button.dataset.exportFormat === "pdf");
     });
     this.menuButton.disabled = busy;
   }

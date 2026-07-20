@@ -48,7 +48,7 @@ describe("actions de la colonne gauche", () => {
     expect(shell).toContain('class="icon-button mobile-writing-toggle"');
     expect(shell).toContain('class="mobile-theme-toggle"');
     expect(shell).toContain('data-i18n="android.saveUnavailable"');
-    expect(shell).toContain('data-i18n="android.exportUnavailable"');
+    expect(shell).toContain('data-i18n="android.exportInfo"');
     expect(shell).toContain("data-share-markdown");
     expect(shell).not.toContain("sidebar-library-save");
     expect(shell.indexOf("mobile-theme-toggle")).toBeLessThan(shell.indexOf("save-document"));

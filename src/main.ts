@@ -35,7 +35,7 @@ app.innerHTML = renderAppShell();
 translateDocument(app);
 
 if (android) {
-  document.querySelectorAll<HTMLButtonElement>(".open-document, .save-document-as, [data-export-open], [data-export-format]")
+  document.querySelectorAll<HTMLButtonElement>(".open-document, .save-document-as")
     .forEach((button) => { button.disabled = true; });
   const saveButton = document.querySelector<HTMLButtonElement>(".save-document");
   if (saveButton) {
@@ -44,11 +44,6 @@ if (android) {
     saveButton.dataset.i18nTitle = "library.save";
     saveButton.setAttribute("aria-label", t("library.save"));
     saveButton.title = t("library.save");
-  }
-  const exportStatus = document.querySelector<HTMLElement>("[data-export-status]");
-  if (exportStatus) {
-    exportStatus.dataset.i18n = "android.exportUnavailable";
-    exportStatus.textContent = t("android.exportUnavailable");
   }
 }
 

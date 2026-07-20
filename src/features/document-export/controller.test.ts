@@ -3,7 +3,11 @@ import { renderAppShell } from "../../components/app-shell";
 import { DocumentStore } from "../../documents/document-state";
 import { setLocale, type Locale } from "../../i18n/i18n";
 import type { AppDialog } from "../../ui/app-dialog";
-import { DocumentExportController, type ExportInvoker } from "./controller";
+import {
+  DocumentExportController,
+  type ExportInvoker,
+  type ExportShareInvoker,
+} from "./controller";
 
 type EventListener = () => void;
 
@@ -35,7 +39,11 @@ class FakeElement {
   }
 }
 
-function setup(invokeExport: ExportInvoker, android = false) {
+function setup(
+  invokeExport: ExportInvoker,
+  android = false,
+  invokeShare: ExportShareInvoker = vi.fn<ExportShareInvoker>().mockResolvedValue(undefined),
+) {
   const section = new FakeElement();
   const editor = new FakeElement();
   const status = new FakeElement();
@@ -68,8 +76,8 @@ function setup(invokeExport: ExportInvoker, android = false) {
   const dialog = { show, showError } as unknown as AppDialog;
   const store = new DocumentStore();
   store.restoreDraft("Brouillon.md", "# Source\n\nContenu **Markdown**.");
-  new DocumentExportController(store, dialog, invokeExport, android).initialize();
-  return { docxButton, menuButton, pdfButton, show, showError, status, store };
+  new DocumentExportController(store, dialog, invokeExport, android, invokeShare).initialize();
+  return { docxButton, invokeShare, menuButton, pdfButton, show, showError, status, store };
 }
 
 describe("DocumentExportController", () => {
@@ -128,20 +136,91 @@ describe("DocumentExportController", () => {
     expect(context.showError).not.toHaveBeenCalled();
   });
 
-  it("désactive l’export Android sans invoquer la commande native", () => {
+  it("active l’export Android et enregistre une vraie copie DOCX", async () => {
+    const invokeExport = vi.fn<ExportInvoker>().mockResolvedValue({
+      path: "",
+      name: "Brouillon.docx",
+      exportId: "export-android-1",
+      mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    });
+    const context = setup(invokeExport, true);
+
+    expect(context.pdfButton.disabled).toBe(true);
+    expect(context.pdfButton.hidden).toBe(true);
+    expect(context.docxButton.disabled).toBe(false);
+    expect(context.menuButton.disabled).toBe(false);
+    context.docxButton.click();
+
+    await vi.waitFor(() => expect(invokeExport).toHaveBeenCalledOnce());
+    await vi.waitFor(() => expect(context.show).toHaveBeenCalledWith(expect.objectContaining({
+      message: expect.stringContaining("ne sera pas supprimée avec l’application"),
+      actions: expect.arrayContaining([
+        expect.objectContaining({ id: "share", label: "Partager" }),
+      ]),
+    })));
+    expect(context.pdfButton.disabled).toBe(true);
+    await vi.waitFor(() => expect(context.docxButton.disabled).toBe(false));
+    expect(context.showError).not.toHaveBeenCalled();
+  });
+
+  it("masque le PDF sur Android et ne l’envoie jamais au backend", () => {
     const invokeExport = vi.fn<ExportInvoker>();
     const context = setup(invokeExport, true);
 
     expect(context.pdfButton.disabled).toBe(true);
-    expect(context.docxButton.disabled).toBe(true);
-    expect(context.menuButton.disabled).toBe(true);
+    expect(context.pdfButton.hidden).toBe(true);
     expect(context.status.textContent).toBe(
-      "L’export PDF et DOCX sera disponible dans une prochaine version Android.",
+      "Les copies DOCX exportées sont distinctes de la bibliothèque Plum3.",
     );
     context.pdfButton.click();
-    context.menuButton.click();
     expect(invokeExport).not.toHaveBeenCalled();
-    expect(context.showError).not.toHaveBeenCalled();
+  });
+
+  it("propose le partage Android uniquement après un export réussi", async () => {
+    const invokeExport = vi.fn<ExportInvoker>().mockResolvedValue({
+      path: "",
+      name: "Brouillon.docx",
+      exportId: "export-android-2",
+      mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    });
+    const invokeShare = vi.fn<ExportShareInvoker>().mockResolvedValue(undefined);
+    const context = setup(invokeExport, true, invokeShare);
+    context.show.mockResolvedValueOnce("share");
+
+    context.docxButton.click();
+
+    await vi.waitFor(() => expect(invokeShare).toHaveBeenCalledWith(
+      "export-android-2",
+      "Partager le document exporté",
+    ));
+  });
+
+  it("ne propose aucun partage après l’annulation Android", async () => {
+    const invokeExport = vi.fn<ExportInvoker>().mockResolvedValue(null);
+    const invokeShare = vi.fn<ExportShareInvoker>().mockResolvedValue(undefined);
+    const context = setup(invokeExport, true, invokeShare);
+
+    context.docxButton.click();
+
+    await vi.waitFor(() => expect(invokeExport).toHaveBeenCalledOnce());
+    expect(context.status.textContent).toBe("Export annulé.");
+    expect(invokeShare).not.toHaveBeenCalled();
+    expect(context.show).not.toHaveBeenCalled();
+  });
+
+  it("ignore un second clic pendant un export Android en cours", async () => {
+    let finishExport: ((result: null) => void) | undefined;
+    const invokeExport = vi.fn<ExportInvoker>().mockImplementation(
+      () => new Promise((resolve) => { finishExport = resolve; }),
+    );
+    const context = setup(invokeExport, true);
+
+    context.docxButton.click();
+    context.docxButton.click();
+
+    expect(invokeExport).toHaveBeenCalledOnce();
+    finishExport?.(null);
+    await vi.waitFor(() => expect(context.status.textContent).toBe("Export annulé."));
   });
 
   it("affiche une erreur claire lorsque l’écriture échoue", async () => {
@@ -177,5 +256,17 @@ describe("DocumentExportController", () => {
       docxLabel,
     ]);
     expect(invokeExport).not.toHaveBeenCalled();
+  });
+
+  it("ne propose que DOCX dans le menu Android", async () => {
+    const invokeExport = vi.fn<ExportInvoker>();
+    const context = setup(invokeExport, true);
+    context.show.mockResolvedValueOnce("cancel");
+
+    context.menuButton.click();
+
+    await vi.waitFor(() => expect(context.show).toHaveBeenCalledOnce());
+    expect(context.show.mock.calls[0][0].actions.map((action: { id: string }) => action.id))
+      .toEqual(["cancel", "docx"]);
   });
 });
