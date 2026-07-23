@@ -91,6 +91,10 @@
   z-index: 3;
 }
 
+.android-compact-actions {
+  display: none;
+}
+
 .brand {
   position: relative;
   display: flex;
@@ -961,6 +965,7 @@
 
 .mobile-writing-toggle,
 .mobile-theme-toggle,
+.export-document,
 .mobile-panel-header,
 .mobile-panel-scrim,
 .toolbar-message-android,

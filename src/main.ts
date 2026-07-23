@@ -45,6 +45,11 @@ if (android) {
     saveButton.setAttribute("aria-label", t("library.save"));
     saveButton.title = t("library.save");
   }
+  const revealLibrary = document.querySelector<HTMLButtonElement>(".reveal-left");
+  if (revealLibrary) {
+    revealLibrary.dataset.i18nAriaLabel = "library.open";
+    revealLibrary.setAttribute("aria-label", t("library.open"));
+  }
 }
 
 applyTheme(getInitialTheme());
@@ -124,6 +129,7 @@ markdownShare.initialize();
 function initializeResponsiveLayout(): void {
   const shell = document.querySelector<HTMLElement>(".app-shell");
   const mobileLayout = window.matchMedia("(max-width: 700px)");
+  const usesMobilePanels = () => android || mobileLayout.matches;
   const leftPanel = document.querySelector<HTMLElement>(".left-panel");
   const rightPanel = document.querySelector<HTMLElement>(".right-panel");
   const revealLeft = document.querySelector<HTMLButtonElement>(".reveal-left");
@@ -134,8 +140,8 @@ function initializeResponsiveLayout(): void {
 
 function syncMobilePanelState(): void {
   if (!shell) return;
-  const leftOpen = mobileLayout.matches && shell.classList.contains("is-mobile-left-open");
-  const writingOpen = mobileLayout.matches && shell.classList.contains("is-mobile-writing-open");
+  const leftOpen = usesMobilePanels() && shell.classList.contains("is-mobile-left-open");
+  const writingOpen = usesMobilePanels() && shell.classList.contains("is-mobile-writing-open");
   revealLeft?.setAttribute("aria-expanded", String(leftOpen));
   mobileWritingToggle?.setAttribute("aria-expanded", String(writingOpen));
   if (mobilePanelScrim) mobilePanelScrim.hidden = !(leftOpen || writingOpen);
@@ -148,7 +154,7 @@ function closeMobilePanels(): void {
 
 function syncResponsiveLayout(): void {
   closeMobilePanels();
-  if (mobileLayout.matches) {
+  if (usesMobilePanels()) {
     shell?.classList.remove("is-left-collapsed", "is-right-collapsed");
     rightPanel?.setAttribute("role", "dialog");
     rightPanel?.setAttribute("aria-modal", "true");
@@ -159,13 +165,13 @@ function syncResponsiveLayout(): void {
 }
 
 collapseLeft?.addEventListener("click", () => {
-  if (mobileLayout.matches) closeMobilePanels();
+  if (usesMobilePanels()) closeMobilePanels();
   else shell?.classList.add("is-left-collapsed");
 });
 
 revealLeft?.addEventListener("click", () => {
   if (!shell) return;
-  if (!mobileLayout.matches) {
+  if (!usesMobilePanels()) {
     shell.classList.toggle("is-left-collapsed");
     return;
   }
@@ -179,7 +185,7 @@ revealLeft?.addEventListener("click", () => {
 const rightPanelToggle = document.querySelector<HTMLButtonElement>(".collapse-right");
 
 rightPanelToggle?.addEventListener("click", () => {
-  if (!shell || mobileLayout.matches) return;
+  if (!shell || usesMobilePanels()) return;
   const isCollapsed = shell.classList.toggle("is-right-collapsed");
   rightPanelToggle.setAttribute("aria-expanded", String(!isCollapsed));
   rightPanelToggle.setAttribute(
@@ -189,7 +195,7 @@ rightPanelToggle?.addEventListener("click", () => {
 });
 
 mobileWritingToggle?.addEventListener("click", () => {
-  if (!shell || !mobileLayout.matches) return;
+  if (!shell || !usesMobilePanels()) return;
   const opening = !shell.classList.contains("is-mobile-writing-open");
   closeMobilePanels();
   shell.classList.toggle("is-mobile-writing-open", opening);
@@ -206,13 +212,13 @@ mobilePanelScrim?.addEventListener("click", closeMobilePanels);
 document.addEventListener("plum3:focus-change", closeMobilePanels);
 
 leftPanel?.addEventListener("click", (event) => {
-  if (mobileLayout.matches && (event.target as HTMLElement).closest("button:not(.collapse-left)")) {
+  if (usesMobilePanels() && (event.target as HTMLElement).closest("button:not(.collapse-left)")) {
     closeMobilePanels();
   }
 });
 
 document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && mobileLayout.matches) closeMobilePanels();
+  if (event.key === "Escape" && usesMobilePanels()) closeMobilePanels();
 });
 
   mobileLayout.addEventListener("change", syncResponsiveLayout);

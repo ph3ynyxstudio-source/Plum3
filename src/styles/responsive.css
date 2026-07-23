@@ -237,7 +237,7 @@
 
   .mobile-panel-header {
     position: sticky;
-    z-index: 2;
+    z-index: 3;
     top: 0;
     display: flex;
     min-height: 60px;
@@ -248,6 +248,7 @@
     padding: 6px 4px 6px 12px;
     border-bottom: 1px solid var(--color-border-subtle);
     background: var(--color-surface-panel);
+    isolation: isolate;
   }
 
   .mobile-panel-header h2 {
@@ -412,7 +413,8 @@
   }
 
   :root[data-platform="android"] {
-    --topbar-height: calc(64px + env(safe-area-inset-top, 0px));
+    --android-safe-top: max(28px, env(safe-area-inset-top, 0px));
+    --topbar-height: calc(64px + var(--android-safe-top));
   }
 
   :root[data-platform="android"][data-theme="aube"] .left-panel {
@@ -437,7 +439,7 @@
     grid-template-columns: 48px minmax(0, 1fr) auto;
     grid-template-rows: 48px;
     gap: 6px;
-    padding: env(safe-area-inset-top, 0px) 8px 8px;
+    padding: var(--android-safe-top) 8px 8px;
   }
 
   :root[data-platform="android"] .document-title {
@@ -456,6 +458,14 @@
   :root[data-platform="android"] .save-document-as,
   :root[data-platform="android"] .collapse-right {
     display: none;
+  }
+
+  :root[data-platform="android"] .export-document {
+    display: grid;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--color-border-default);
+    background: var(--color-surface-card);
   }
 
   :root[data-platform="android"] .document-files-section {
@@ -687,6 +697,210 @@
 
 @media (max-width: 640px) {
   .document-title strong { font-size: 13px; }
+}
+
+/* Android keeps the phone/tablet navigation model in landscape as well. */
+@media (min-width: 701px) {
+  :root[data-platform="android"] {
+    --left-panel-width: 0px;
+    --right-panel-width: 0px;
+    --android-safe-top: max(28px, env(safe-area-inset-top, 0px));
+    --topbar-height: calc(64px + var(--android-safe-top));
+    --statusbar-height: calc(42px + env(safe-area-inset-bottom, 0px));
+  }
+
+  :root[data-platform="android"] .app-shell {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: var(--topbar-height) minmax(0, 1fr) var(--statusbar-height);
+  }
+
+  :root[data-platform="android"] .topbar {
+    grid-column: 1;
+    grid-row: 1;
+    grid-template-columns: 48px minmax(0, 1fr) auto;
+    grid-template-rows: 48px;
+    gap: 6px;
+    padding: var(--android-safe-top) 8px 8px;
+  }
+
+  :root[data-platform="android"] .reveal-left { visibility: visible; }
+  :root[data-platform="android"] .document-title { grid-column: 2; grid-row: 1; justify-content: center; }
+  :root[data-platform="android"] .document-title small { display: none; }
+  :root[data-platform="android"] .topbar-actions { display: flex; grid-column: 3; grid-row: 1; gap: 8px; }
+  :root[data-platform="android"] .save-document-as,
+  :root[data-platform="android"] .collapse-right { display: none; }
+  :root[data-platform="android"] .mobile-theme-toggle { display: none; }
+  :root[data-platform="android"] .theme-switcher {
+    display: flex;
+    height: 44px;
+    align-items: center;
+  }
+  :root[data-platform="android"] .theme-switcher button {
+    width: auto;
+    min-height: 36px;
+    padding-inline: 11px;
+  }
+  :root[data-platform="android"] .theme-switcher span { display: inline; }
+  :root[data-platform="android"] .theme-switcher .icon { display: block; }
+  :root[data-platform="android"] .mobile-writing-toggle,
+  :root[data-platform="android"] .export-document { display: grid; }
+  :root[data-platform="android"] .mobile-writing-toggle,
+  :root[data-platform="android"] .export-document {
+    width: 44px;
+    height: 44px;
+    place-items: center;
+  }
+
+  :root[data-platform="android"] .left-panel,
+  :root[data-platform="android"] .right-panel {
+    position: fixed;
+    z-index: 70;
+    top: 0;
+    bottom: 0;
+    display: flex;
+    grid-column: auto;
+    grid-row: auto;
+    opacity: 1;
+    pointer-events: auto;
+    transition: transform var(--motion-normal);
+  }
+
+  :root[data-platform="android"] .left-panel {
+    left: 0;
+    width: min(88vw, 360px);
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    transform: translateX(-102%);
+    box-shadow: var(--shadow-elevated);
+  }
+
+  :root[data-platform="android"] .right-panel,
+  :root[data-platform="android"] .is-right-collapsed .right-panel {
+    right: 0;
+    width: min(92vw, 390px);
+    flex-direction: column;
+    padding: env(safe-area-inset-top, 0px) 12px env(safe-area-inset-bottom, 0px);
+    overflow: auto;
+    border-left: 1px solid var(--color-border-subtle);
+    background: var(--color-surface-panel);
+    transform: translateX(102%);
+    box-shadow: var(--shadow-elevated);
+  }
+
+  :root[data-platform="android"] .is-mobile-left-open .left-panel,
+  :root[data-platform="android"] .is-mobile-writing-open .right-panel { transform: translateX(0); }
+  :root[data-platform="android"] .mobile-panel-header {
+    display: none;
+  }
+  :root[data-platform="android"] .right-panel > .settings-card { width: 100%; }
+  :root[data-platform="android"] .mobile-panel-scrim {
+    position: fixed;
+    z-index: 60;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    background: color-mix(in srgb, var(--color-background-app) 68%, transparent);
+  }
+  :root[data-platform="android"] .document-files-section { display: none; }
+  :root[data-platform="android"] .mobile-library-section { display: block; }
+  :root[data-platform="android"] .mobile-library-view {
+    min-width: 0;
+    min-height: 0;
+    grid-column: 1;
+    grid-row: 2 / 4;
+    overflow: hidden;
+    background: var(--color-background-app);
+  }
+  :root[data-platform="android"] .app-shell.is-library-view .mobile-library-view { display: block; }
+  :root[data-platform="android"] .app-shell.is-library-view .workspace,
+  :root[data-platform="android"] .app-shell.is-library-view .statusbar { display: none; }
+  :root[data-platform="android"] .workspace { grid-column: 1; grid-row: 2; }
+  :root[data-platform="android"] .statusbar { grid-column: 1; grid-row: 3; padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+  :root[data-platform="android"][data-theme="aube"] .left-panel {
+    background: linear-gradient(180deg, #e7edf8 0%, #eee8f4 18%, var(--color-surface-panel) 58%);
+  }
+  :root[data-platform="android"][data-theme="nuit"] .left-panel {
+    background: linear-gradient(180deg, #17243b 0%, #182b47 18%, var(--color-surface-panel) 42%);
+  }
+}
+
+/* This is the only compact-rail breakpoint: a phone landscape viewport at 500px high or less. */
+@media (min-width: 701px) and (orientation: landscape) and (max-height: 500px) {
+  :root[data-platform="android"] {
+    --android-compact-rail-width: 64px;
+  }
+
+  :root[data-platform="android"] .app-shell {
+    grid-template-columns: var(--android-compact-rail-width) minmax(0, 1fr);
+  }
+
+  :root[data-platform="android"] .left-panel {
+    position: relative;
+    z-index: 3;
+    top: auto;
+    bottom: auto;
+    left: auto;
+    width: auto;
+    grid-column: 1;
+    grid-row: 1 / 4;
+    padding: env(safe-area-inset-top, 0px) 10px env(safe-area-inset-bottom, 0px);
+    border-right: 1px solid var(--color-border-subtle);
+    box-shadow: none;
+    transform: none;
+    transition: none;
+  }
+
+  :root[data-platform="android"] .left-panel > :not(.android-compact-actions) {
+    display: none;
+  }
+
+  :root[data-platform="android"] .android-compact-actions {
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  :root[data-platform="android"] .android-compact-action {
+    display: grid;
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    place-items: center;
+    padding: 0;
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-card);
+    color: var(--color-text-primary);
+    touch-action: manipulation;
+  }
+
+  :root[data-platform="android"] .android-compact-action:hover,
+  :root[data-platform="android"] .android-compact-action:focus-visible {
+    border-color: var(--color-accent);
+    background: var(--color-accent-soft);
+    color: var(--color-accent);
+  }
+
+  :root[data-platform="android"] .reveal-left {
+    display: none;
+  }
+
+  :root[data-platform="android"] .topbar,
+  :root[data-platform="android"] .workspace,
+  :root[data-platform="android"] .statusbar,
+  :root[data-platform="android"] .mobile-library-view {
+    grid-column: 2;
+  }
+
+  :root[data-platform="android"] .mobile-library-view {
+    grid-row: 2 / 4;
+  }
 }
 
 @media (max-width: 430px) {

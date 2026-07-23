@@ -154,8 +154,8 @@ export class DocumentController {
     document.querySelector<HTMLButtonElement>(".new-document")?.addEventListener("click", () => {
       void this.openTemplateAssistant();
     });
-    document.querySelector<HTMLButtonElement>("[data-template-open]")?.addEventListener("click", () => {
-      void this.openTemplateAssistant();
+    document.querySelectorAll<HTMLButtonElement>("[data-template-open]").forEach((button) => {
+      button.addEventListener("click", () => void this.openTemplateAssistant());
     });
     document.querySelectorAll<HTMLButtonElement>("[data-template-quick]").forEach((button) => {
       button.addEventListener("click", () => void this.openTemplateAssistant(button.dataset.templateQuick));

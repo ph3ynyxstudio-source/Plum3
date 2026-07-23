@@ -207,6 +207,11 @@ export function renderAppShell(): string {
   return `
     <div class="app-shell">
       <aside id="mobile-library-panel" class="left-panel" aria-label="Bibliothèque de documents" data-i18n-aria-label="nav.library">
+        <nav class="android-compact-actions" aria-label="Actions principales">
+          <button class="android-compact-action" data-template-open type="button" aria-label="Modèles d’écriture" data-i18n-aria-label="nav.templates" title="Modèles d’écriture" data-i18n-title="nav.templates">${icon("plus")}</button>
+          <button class="android-compact-action" data-library-open type="button" aria-label="Ouvrir la bibliothèque" data-i18n-aria-label="library.open" title="Ouvrir la bibliothèque" data-i18n-title="library.open">${icon("book")}</button>
+          <button class="android-compact-action" data-export-open type="button" aria-label="Exporter le document" data-i18n-aria-label="export.document" title="Exporter le document" data-i18n-title="export.document">${icon("export")}</button>
+        </nav>
         <div class="brand">
           <div class="brand-logos">
             <img class="brand-logo brand-logo-aube" src="/logo-aube.webp" alt="Plum3 — Dépose ton encre." />
@@ -255,6 +260,7 @@ export function renderAppShell(): string {
           </button>
           <button class="icon-button document-action save-document" data-document-action="save" type="button" aria-label="Enregistrer" data-i18n-aria-label="actions.save" title="Enregistrer (Ctrl+S)" data-i18n-title="actions.saveShortcut">${icon("save")}</button>
           <button class="icon-button document-action save-document-as" data-document-action="save-as" type="button" aria-label="Enregistrer sous" data-i18n-aria-label="actions.saveAs" title="Enregistrer sous… (Ctrl+Maj+S)" data-i18n-title="actions.saveAsShortcut">${icon("saveAs")}</button>
+          <button class="icon-button export-document" data-export-open type="button" aria-label="Exporter le document" data-i18n-aria-label="export.document" title="Exporter le document" data-i18n-title="export.document">${icon("export")}</button>
           <button class="icon-button collapse-right" type="button" aria-label="Fermer la colonne de personnalisation" data-i18n-aria-label="actions.closeRight" aria-expanded="true">${icon("menu")}</button>
           <button class="icon-button mobile-writing-toggle" type="button" aria-label="Réglages d’écriture" data-i18n-aria-label="writing.title" aria-controls="writing-settings-panel" aria-expanded="false">${icon("edit")}</button>
         </div>

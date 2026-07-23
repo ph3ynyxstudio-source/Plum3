@@ -62,7 +62,7 @@ function setup(
   vi.stubGlobal("document", {
     documentElement: { lang: "", dataset: {} },
     querySelector: (selector: string) => elements.get(selector) ?? null,
-    querySelectorAll: () => [],
+    querySelectorAll: (selector: string) => selector === "[data-export-open]" ? [menuButton] : [],
     dispatchEvent: () => true,
   });
   vi.stubGlobal("getComputedStyle", () => ({
@@ -195,6 +195,28 @@ describe("DocumentExportController", () => {
     ));
   });
 
+  it("exporte puis propose le partage d’un fichier Markdown Android", async () => {
+    const invokeExport = vi.fn<ExportInvoker>().mockResolvedValue({
+      path: "",
+      name: "Brouillon.md",
+      exportId: "export-android-markdown",
+      mimeType: "text/markdown",
+    });
+    const invokeShare = vi.fn<ExportShareInvoker>().mockResolvedValue(undefined);
+    const context = setup(invokeExport, true, invokeShare);
+    context.show.mockResolvedValueOnce("markdown").mockResolvedValueOnce("share");
+
+    context.menuButton.click();
+
+    await vi.waitFor(() => expect(invokeExport).toHaveBeenCalledWith(
+      expect.objectContaining({ format: "markdown" }),
+    ));
+    await vi.waitFor(() => expect(invokeShare).toHaveBeenCalledWith(
+      "export-android-markdown",
+      "Partager le document exporté",
+    ));
+  });
+
   it("ne propose aucun partage après l’annulation Android", async () => {
     const invokeExport = vi.fn<ExportInvoker>().mockResolvedValue(null);
     const invokeShare = vi.fn<ExportShareInvoker>().mockResolvedValue(undefined);
@@ -258,7 +280,7 @@ describe("DocumentExportController", () => {
     expect(invokeExport).not.toHaveBeenCalled();
   });
 
-  it("ne propose que DOCX dans le menu Android", async () => {
+  it("propose Markdown et DOCX dans le menu Android", async () => {
     const invokeExport = vi.fn<ExportInvoker>();
     const context = setup(invokeExport, true);
     context.show.mockResolvedValueOnce("cancel");
@@ -267,6 +289,6 @@ describe("DocumentExportController", () => {
 
     await vi.waitFor(() => expect(context.show).toHaveBeenCalledOnce());
     expect(context.show.mock.calls[0][0].actions.map((action: { id: string }) => action.id))
-      .toEqual(["cancel", "docx"]);
+      .toEqual(["cancel", "markdown", "docx"]);
   });
 });

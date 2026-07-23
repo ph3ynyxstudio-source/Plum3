@@ -24,6 +24,7 @@ use crate::android_document_export::{
 pub enum ExportFormat {
     Pdf,
     Docx,
+    Markdown,
 }
 
 impl ExportFormat {
@@ -31,6 +32,7 @@ impl ExportFormat {
         match self {
             Self::Pdf => "pdf",
             Self::Docx => "docx",
+            Self::Markdown => "md",
         }
     }
 
@@ -39,6 +41,7 @@ impl ExportFormat {
         match self {
             Self::Pdf => "PDF",
             Self::Docx => "Word",
+            Self::Markdown => "Markdown",
         }
     }
 
@@ -47,6 +50,7 @@ impl ExportFormat {
         match self {
             Self::Pdf => "application/pdf",
             Self::Docx => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            Self::Markdown => "text/markdown",
         }
     }
 }
@@ -151,6 +155,7 @@ pub fn export_document(request: ExportRequest) -> Result<Option<ExportResult>, E
     match request.format {
         ExportFormat::Pdf => pdf_export::write_pdf(&path, &request.content, &request.style)?,
         ExportFormat::Docx => docx_export::write_docx(&path, &request.content, &request.style)?,
+        ExportFormat::Markdown => write_bytes(&path, request.content.as_bytes())?,
     }
 
     Ok(Some(ExportResult {
@@ -187,6 +192,7 @@ pub fn export_document<R: Runtime>(
         ExportFormat::Docx => {
             docx_export::write_docx(&temporary_path, &request.content, &request.style)?
         }
+        ExportFormat::Markdown => write_bytes(&temporary_path, request.content.as_bytes())?,
         ExportFormat::Pdf => {
             let _ = fs::remove_file(&temporary_path);
             return Err(export_error(
@@ -302,7 +308,6 @@ fn enforce_extension(mut path: PathBuf, format: ExportFormat) -> PathBuf {
     path
 }
 
-#[cfg(not(any(target_os = "android", target_os = "ios")))]
 fn write_bytes(path: &std::path::Path, bytes: &[u8]) -> Result<(), ExportError> {
     fs::write(path, bytes).map_err(|source| {
         export_error(
@@ -325,6 +330,10 @@ mod tests {
         assert_eq!(
             suggested_export_name("Roman.md", ExportFormat::Docx),
             "Roman.docx"
+        );
+        assert_eq!(
+            suggested_export_name("Roman.docx", ExportFormat::Markdown),
+            "Roman.md"
         );
     }
 

@@ -77,6 +77,7 @@ function setup(android: boolean, libraryEnabled = android) {
   const openButton = new FakeElement();
   const saveButton = new FakeElement();
   const saveAsButton = new FakeElement();
+  const templateOpenButtons = [new FakeElement(), new FakeElement()];
   const saveDot = new FakeElement();
   const documentStatus = new FakeElement();
   openButton.dataset.documentAction = "open";
@@ -105,6 +106,7 @@ function setup(android: boolean, libraryEnabled = android) {
       if (selector === "[data-document-action]") {
         return [openButton, saveButton, saveAsButton];
       }
+      if (selector === "[data-template-open]") return templateOpenButtons;
       if (selector === "[data-document-save-dot]") return [saveDot];
       if (selector === ".open-document, .save-document-as") return [openButton, saveAsButton];
       return [];
@@ -162,6 +164,8 @@ function setup(android: boolean, libraryEnabled = android) {
     openButton,
     saveButton,
     saveAsButton,
+    templateOpenButtons,
+    templates,
     androidAutosave,
     recoveryDrafts,
     saveDot,
@@ -175,6 +179,15 @@ describe("DocumentController et les fichiers Android", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
+  });
+
+  it("relie toutes les entrées vers les modèles", async () => {
+    const context = setup(true);
+
+    context.templateOpenButtons.forEach((button) => button.click());
+    await Promise.resolve();
+
+    expect(context.templates.show).toHaveBeenCalledTimes(2);
   });
 
   it("neutralise le bouton, Ctrl+O et toutes les voies de documents récents sur Android", async () => {

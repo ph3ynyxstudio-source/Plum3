@@ -4,7 +4,7 @@ import { AppDialog } from "../../ui/app-dialog";
 import { getLocale, t } from "../../i18n/i18n";
 import { isAndroid } from "../../platform/platform";
 
-type ExportFormat = "pdf" | "docx";
+type ExportFormat = "pdf" | "docx" | "markdown";
 type ExportFontKind = "serif" | "sans" | "mono";
 
 interface ExportResult {
@@ -69,7 +69,7 @@ export class DocumentExportController {
   private readonly section = this.requireElement<HTMLElement>("[data-document-export]");
   private readonly editor = this.requireElement<HTMLTextAreaElement>("[data-document-editor]");
   private readonly status = this.requireElement<HTMLElement>("[data-export-status]");
-  private readonly menuButton = this.requireElement<HTMLButtonElement>("[data-export-open]");
+  private readonly menuButtons = Array.from(document.querySelectorAll<HTMLButtonElement>("[data-export-open]"));
   private readonly buttons = Array.from(
     this.section.querySelectorAll<HTMLButtonElement>("[data-export-format]"),
   );
@@ -99,15 +99,18 @@ export class DocumentExportController {
         void this.export(button.dataset.exportFormat as ExportFormat);
       });
     });
-    this.menuButton.addEventListener("click", () => {
+    this.menuButtons.forEach((button) => button.addEventListener("click", () => {
       void this.chooseFormat();
-    });
+    }));
   }
 
   private async chooseFormat(): Promise<void> {
     if (this.busy) return;
     const formatActions = this.android
-      ? [{ id: "docx", label: t("export.asDocx"), tone: "primary" as const }]
+      ? [
+          { id: "markdown", label: t("export.asMarkdown"), tone: "primary" as const },
+          { id: "docx", label: t("export.asDocx"), tone: "primary" as const },
+        ]
       : [
           { id: "pdf", label: t("export.asPdf"), tone: "primary" as const },
           { id: "docx", label: t("export.asDocx"), tone: "primary" as const },
@@ -120,7 +123,7 @@ export class DocumentExportController {
         ...formatActions,
       ],
     });
-    if (action === "pdf" || action === "docx") await this.export(action);
+    if (action === "pdf" || action === "docx" || action === "markdown") await this.export(action);
   }
 
   private async export(format: ExportFormat): Promise<void> {
@@ -128,7 +131,9 @@ export class DocumentExportController {
     if (this.busy) return;
 
     this.setBusy(true);
-    this.status.textContent = format === "pdf" ? t("export.pdfCreating") : t("export.wordCreating");
+    this.status.textContent = format === "pdf"
+      ? t("export.pdfCreating")
+      : format === "markdown" ? t("export.markdownCreating") : t("export.wordCreating");
     try {
       const result = await this.invokeDocumentExport({
         format,
@@ -220,7 +225,7 @@ export class DocumentExportController {
       button.disabled =
         busy || (this.android && button.dataset.exportFormat === "pdf");
     });
-    this.menuButton.disabled = busy;
+    this.menuButtons.forEach((button) => { button.disabled = busy; });
   }
 
   private requireElement<T extends HTMLElement>(selector: string): T {

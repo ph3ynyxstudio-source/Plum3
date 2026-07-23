@@ -1,7 +1,7 @@
 
 # Checklist de publication Google Play — Plum3
 
-Dernière vérification : **20 juillet 2026 à 9 h 41 (heure de Toronto)**
+Dernière vérification : **22 juillet 2026 à 14 h 01 (heure de Toronto)**
 
 Cette checklist concerne la future publication de **Plum3 Free** sur Google Play.
 Elle ne remplace pas les règles officielles de Google Play, qui peuvent évoluer.
@@ -20,6 +20,9 @@ Elle ne remplace pas les règles officielles de Google Play, qui peuvent évolue
 - [x] `compileSdk = 36`.
 - [x] `targetSdk = 36`.
 - [x] APK ARM64 debug généré et installé sur un appareil réel.
+- [x] APK ARM64 release signé généré, installé par-dessus la version
+  existante et lancé sur le Nothing Phone A059 sans effacer les données locales.
+- [x] AAB ARM64 release signé généré et vérifié.
 - [x] Icône adaptative Android intégrée avec calques de fond, premier plan et
   monochrome.
 - [x] Icône ronde déclarée dans le manifeste Android.
@@ -157,6 +160,26 @@ Limite restante : une mise à jour de Plum3 distribuée par Google Play devra en
 > la bibliothèque ferme l’activité et revient au lanceur Nothing. L’écran Bibliothèque
 > ne présente aucune action « Ouvrir un document ».
 
+### Validation finale de l’interface Android — 22 juillet 2026
+
+- [x] Les corrections d’interface ont été validées sur Pixel Tablet dans
+  l’émulateur Android Studio, en portrait et en paysage.
+- [x] L’interface Android reste active sur téléphone et tablette sans reprendre
+  les comportements Desktop ou Windows.
+- [x] L’action « Ouvrir un document » n’est plus présentée sur Android et la
+  navigation du panneau gauche fonctionne de nouveau.
+- [x] La bibliothèque locale reste accessible en portrait et en paysage.
+- [x] La barre supérieure respecte la barre système Android et ses boutons ne
+  sont plus masqués par l’heure, le réseau ou la batterie.
+- [x] L’action Android « Exporter » propose Markdown et DOCX; « Enregistrer
+  sous » n’est plus affiché sur Android.
+- [x] Le panneau « Réglages d’écriture » utilise toute la largeur disponible,
+  sans colonne de titre redondante, et son en-tête reste opaque au défilement.
+- [x] Les boutons Aube et Nuit restent côte à côte sur Android.
+- [x] Le dégradé mobile du panneau gauche est conservé sur Pixel Tablet.
+- [x] Toutes les anomalies d’interface Android signalées le 21 juillet 2026 sont
+  considérées corrigées après la validation visuelle de l’utilisateur.
+
 ## 2. Compte développeur et identité
 
 - [x] Compte Google Play Console créé et vérifié.
@@ -180,12 +203,12 @@ Limite restante : une mise à jour de Plum3 distribuée par Google Play devra en
   manifeste généré.
 - [ ] Vérifier définitivement l’identifiant avant le premier téléversement :
   il ne pourra pas être changé pour les mises à jour de la même application.
-- [ ] Définir explicitement le `versionCode` Android de la première version.
-- [ ] Confirmer le `versionName` public.
+- [x] Définir explicitement le `versionCode` Android de la première version : `1`.
+- [x] Confirmer le `versionName` public : `1.0.0`.
 - [ ] Documenter la règle d’incrémentation du `versionCode`.
 - [ ] Incrémenter le `versionCode` à chaque AAB téléversé, même pour les pistes
   de test.
-- [ ] Vérifier que toutes les architectures natives publiées comprennent
+- [x] Vérifier que toutes les architectures natives publiées comprennent
   `arm64-v8a`.
 - [x] Limiter la publication initiale à `arm64-v8a`.
 - [ ] Réévaluer `armeabi-v7a` seulement après la première publication si un
@@ -202,8 +225,8 @@ Limite restante : une mise à jour de Plum3 distribuée par Google Play devra en
   du cache n’est exposé.
 - [x] N’exposer que le sous-dossier temporaire `markdown-shares/` nécessaire au
   partage Markdown.
-- [ ] Vérifier les comportements portrait, paysage et redimensionnement.
-- [ ] Vérifier l’affichage sur téléphone, tablette et grand écran.
+- [x] Vérifier les comportements portrait, paysage et redimensionnement.
+- [x] Vérifier l’affichage sur téléphone, tablette et grand écran.
 - [ ] Vérifier qu’aucune permission sensible inutile n’est demandée.
 - [ ] Vérifier les liens externes, le courriel de soutien et la politique de
   confidentialité sur un build release.
@@ -252,17 +275,18 @@ Limite restante : une mise à jour de Plum3 distribuée par Google Play devra en
 
 ## 6. Signature Android
 
-- [ ] Créer une clé d’envoi Android dédiée à Plum3.
-- [ ] Conserver le keystore hors du dépôt et dans une sauvegarde sécurisée.
-- [ ] Ne jamais inscrire un mot de passe de signature dans Git.
-- [ ] Créer localement `src-tauri/gen/android/keystore.properties`.
-- [ ] Vérifier que Gradle applique la configuration de signature au build
+- [x] Créer une clé d’envoi Android dédiée à Plum3.
+- [x] Conserver le keystore hors du dépôt.
+- [ ] Confirmer sa sauvegarde sécurisée sur un second emplacement.
+- [x] Ne jamais inscrire un mot de passe de signature dans Git.
+- [x] Créer localement `src-tauri/gen/android/keystore.properties`.
+- [x] Vérifier que Gradle applique la configuration de signature au build
   `release`.
 - [ ] Activer Play App Signing lors de la première release.
 - [ ] Sauvegarder le certificat public de la clé d’envoi.
 - [ ] Documenter la procédure de récupération ou de réinitialisation de la clé
   d’envoi.
-- [ ] Vérifier la signature de l’AAB final.
+- [x] Vérifier la signature de l’AAB final.
 
 Exemple de création de clé d’envoi, à exécuter seulement au moment choisi :
 
@@ -278,10 +302,10 @@ Ne pas placer le mot de passe ou le chemin privé réel dans cette checklist.
 
 ## 7. AAB release et taille
 
-- [ ] Générer un **Android App Bundle release signé** ; ne pas téléverser l’APK
+- [x] Générer un **Android App Bundle release signé** ; ne pas téléverser l’APK
   debug utilisé pour les tests locaux.
-- [ ] Ne pas publier un AAB contenant les symboles de débogage inutiles.
-- [ ] Vérifier que le build release utilise l’optimisation et la minification
+- [x] Ne pas publier un AAB contenant les symboles de débogage inutiles.
+- [x] Vérifier que le build release utilise l’optimisation et la minification
   prévues.
 - [ ] Vérifier le contenu de l’AAB avec Android Studio ou `bundletool`.
 - [ ] Tester les APK générés depuis l’AAB, pas seulement l’APK debug Tauri.
@@ -294,6 +318,12 @@ Ne pas placer le mot de passe ou le chemin privé réel dans cette checklist.
 - [ ] Examiner les bibliothèques Rust et ressources si l’estimation dépasse la
   limite.
 - [ ] Archiver l’AAB final, son SHA-256, sa version et son `versionCode`.
+
+L’AAB ARM64 release signé du 22 juillet 2026 pèse `9 727 110` octets.
+Son SHA-256 est
+`68BC1162F648230FF30AB8D32112C0CFC7BC2C3EE170F61AA223B3EC4677B2CD`.
+La signature JAR a été vérifiée, le manifeste est présent et le bundle contient
+`base/lib/arm64-v8a/libplum3_de_nyx_lib.so`.
 
 Le dernier APK debug ARM64 du 20 juillet 2026 pèse `27 028 425` octets,
 soit environ `25,8 MiB`. Son SHA-256 est
@@ -425,10 +455,10 @@ npm run tauri -- android build --aab --target aarch64
 > maintenant confirmés. Ils ne constituent plus des blocages.
 
 1. Permission Internet à justifier ou retirer.
-2. Clé d’envoi et signature release non configurées.
-3. Aucun AAB release signé et testé.
-4. Taille réelle Play Store inconnue.
-5. Fiche, déclarations et piste de test Play Console non préparées.
+2. AAB release signé généré localement, mais pas encore testé depuis une
+   distribution Google Play.
+3. Taille de téléchargement réelle Play Store inconnue.
+4. Fiche, déclarations et piste de test Play Console non finalisées.
 
 ## Références officielles
 
